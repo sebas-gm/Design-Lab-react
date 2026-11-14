@@ -13,13 +13,13 @@ export default function ActivarNegocio() {
             El siguiente paso para tu emprendimiento
           </span>
           <h1>Tu negocio también tiene un lugar aquí</h1>
-          <p>Activa tu cuenta de negocios con tu misma cuenta de Design Lab.</p>
+          <p>Activa tu cuenta de negocios con tu misma cuenta de Navishop.</p>
         </div>
       </div>
       <section className="migration-panel activation-panel">
         <h2>Comparte lo que haces con tu comunidad</h2>
         <p>
-          Publica tu negocio cerca de TECBA y administra sus productos,
+          Publica tu negocio y administra sus productos,
           promociones, horarios y videos desde un solo lugar.
         </p>
         <ol>

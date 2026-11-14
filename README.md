@@ -1,4 +1,6 @@
-# Design Lab
+# Navishop
+
+La marca de la aplicación es **Navishop**. El paquete del frontend se llama `navishop` y la documentación de FastAPI se presenta como Navishop API. La base existente conserva el nombre técnico `design_lab_db`, y se mantienen la cookie y los eventos internos de sesión anteriores para conservar la compatibilidad. El cambio de marca no requiere crear otra base ni modificar credenciales.
 
 Directorio de negocios cercanos a TECBA. React + Vite, FastAPI, SQLAlchemy y MySQL. Conserva el diseño morado, las rutas y el catálogo original como datos de ejemplo importables.
 
@@ -46,7 +48,7 @@ Abre `http://localhost:5173`. Usa este host también para iniciar sesión: Vite 
 
 ## Uso y conservación de datos
 
-Solo editar, guardar y eliminar solicitan confirmación mediante un modal propio de Design Lab. El fondo se oscurece y el usuario elige **Sí, editar/guardar/eliminar** o **No, cancelar**. Escape cancela; el foco queda dentro del modal y vuelve al control de origen al cerrarlo. Cancelar no envía la operación a la API; las imágenes del formulario se suben después de confirmar el guardado. El guardado incluye registrar un negocio/producto y guardar un enlace de video. Iniciar/cerrar sesión, registrarse como usuario, cambiar preferencias o estados de promoción, importar y cancelar formularios no muestran confirmación. No se utiliza `window.confirm`.
+Solo editar, guardar y eliminar solicitan confirmación mediante un modal propio de Navishop. El fondo se oscurece y el usuario elige **Sí, editar/guardar/eliminar** o **No, cancelar**. Escape cancela; el foco queda dentro del modal y vuelve al control de origen al cerrarlo. Cancelar no envía la operación a la API; las imágenes del formulario se suben después de confirmar el guardado. El guardado incluye registrar un negocio/producto y guardar un enlace de video. Iniciar/cerrar sesión, registrarse como usuario, cambiar preferencias o estados de promoción, importar y cancelar formularios no muestran confirmación. No se utiliza `window.confirm`.
 
 Pruebas de la decisión del modal: `node --test tests/confirmation.test.mjs`. Comprueban cancelación sin cambios, ejecución única al confirmar, bloqueo de solicitudes duplicadas y restricción a las tres acciones admitidas.
 
@@ -141,7 +143,7 @@ La barra lateral es exclusiva de las cuentas de negocios: Mi panel, Mi cuenta, M
 
 En **Mis videos**, el propietario selecciona uno de sus negocios e introduce título y enlace HTTPS. Puede editar o quitar sus enlaces. La pestaña pública **Videos** permite filtrar por negocio y cargar más resultados, en páginas de 12. El detalle del negocio también enlaza a sus videos.
 
-Se integran los reproductores oficiales de YouTube (incluye Shorts y directos) y TikTok mediante iframe, sin claves API. Se cargan cuando el visitante pulsa **Ver video**. La API de Design Lab valida dominios/identificadores y genera la dirección del reproductor; no descarga videos ni ejecuta HTML proporcionado por usuarios. MySQL guarda solamente `id`, `negocioId`, `titulo` y `url` en la tabla `videos`. Los archivos originales permanecen en la plataforma. No se siguen enlaces arbitrarios desde el servidor.
+Se integran los reproductores oficiales de YouTube (incluye Shorts y directos) y TikTok mediante iframe, sin claves API. Se cargan cuando el visitante pulsa **Ver video**. La API de Navishop valida dominios/identificadores y genera la dirección del reproductor; no descarga videos ni ejecuta HTML proporcionado por usuarios. MySQL guarda solamente `id`, `negocioId`, `titulo` y `url` en la tabla `videos`. Los archivos originales permanecen en la plataforma. No se siguen enlaces arbitrarios desde el servidor.
 
 Para TikTok usa `https://www.tiktok.com/@usuario/video/ID`; abre primero los enlaces cortos `vm.tiktok.com`/`vt.tiktok.com` en la plataforma y copia la dirección completa. En YouTube se admiten `watch?v=ID`, `youtu.be/ID`, `/shorts/ID`, `/live/ID` y `/embed/ID`. Otras plataformas todavía no están integradas. Los videos privados, eliminados o con inserción restringida pueden no reproducirse; siempre se ofrece un enlace a la plataforma original. La disponibilidad final depende del proveedor y de la conexión a Internet.
 

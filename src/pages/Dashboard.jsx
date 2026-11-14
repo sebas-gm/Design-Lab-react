@@ -10,7 +10,7 @@ function Dashboard() {
   return (
     <main className="dashboard">
       <h1>Panel de administración</h1>
-      <p>Bienvenido al panel de Design Lab.</p>
+      <p>Bienvenido al panel de Navishop.</p>
 
       <LegacyImport />
       <div className="dashboard-contenedor">

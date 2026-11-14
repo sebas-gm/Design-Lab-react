@@ -271,7 +271,7 @@ export default function MiCuenta() {
         <Setting
           icon="preferences"
           title="Preferencias"
-          description="Personaliza tu experiencia en Design Lab."
+          description="Personaliza tu experiencia en Navishop."
         >
           <label className="motion-preference">
             <input

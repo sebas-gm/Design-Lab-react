@@ -85,7 +85,7 @@ export default function Videos({ manage = false }) {
   async function remove(video) {
     if (
       !(await confirm(
-        `Se quitará “${video.titulo}” de Design Lab. El video original seguirá en su plataforma.`,
+        `Se quitará “${video.titulo}” de Navishop. El video original seguirá en su plataforma.`,
         "delete",
       ))
     )
@@ -121,7 +121,7 @@ export default function Videos({ manage = false }) {
     <main className="videos-page">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">Design Lab · En movimiento</span>
+          <span className="eyebrow">Navishop · En movimiento</span>
           <h1>{manage ? "Mis videos" : "Conoce los negocios en video"}</h1>
           <p>
             {manage

@@ -58,3 +58,12 @@
 .login a:hover {
   text-decoration: underline;
 }
+
+.login > .auth-switch {
+  margin-top: 32px;
+  margin-bottom: 0;
+}
+.auth-switch a {
+  display: inline-block;
+  padding: 8px 12px;
+}

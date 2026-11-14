@@ -7,9 +7,9 @@ export default function Welcome() {
     <main className="welcome-screen">
       <header className="welcome-header">
         <Link to="/" className="welcome-wordmark">
-          Design Lab<span>Hecho para descubrir</span>
+          Navishop<span>Hecho para descubrir</span>
         </Link>
-        <span className="welcome-location">Tu comunidad, más cerca.</span>
+        <span className="welcome-location">Tu comunidad, más cerca de ti</span>
       </header>
       <section className="welcome-content" aria-labelledby="welcome-title">
         <span className="welcome-badge">
@@ -38,7 +38,7 @@ export default function Welcome() {
           </svg>
         </div>
         <h1 id="welcome-title">
-          Design <span>Lab</span>
+          Navi<span>shop</span>
         </h1>
         <h2>
           Lo mejor de tu barrio.
@@ -48,14 +48,16 @@ export default function Welcome() {
         <p>
           Negocios, productos e historias por descubrir.
           <br />
-          Conecta con tu comunidad cerca de TECBA.
+          Conecta con tu comunidad.
         </p>
-        <Link className="welcome-login" to="/login">
-          Iniciar sesión
-        </Link>
-        <p className="welcome-register">
-          ¿Es tu primera visita? <Link to="/registro">Crea tu cuenta</Link>
-        </p>
+        <div className="welcome-actions">
+          <Link className="welcome-login" to="/login">
+            Iniciar sesión
+          </Link>
+          <p className="welcome-register">
+            ¿Es tu primera visita? <Link to="/registro">Crea tu cuenta</Link>
+          </p>
+        </div>
         {ready && user && (
           <small className="welcome-session">
             Tu sesión sigue activa. Al continuar entrarás con tu cuenta.
@@ -63,7 +65,7 @@ export default function Welcome() {
         )}
       </section>
       <footer className="welcome-footer">
-        <span>© {new Date().getFullYear()} Design Lab</span>
+        <span>© {new Date().getFullYear()} Navishop</span>
         <a
           href="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab"
           target="_blank"

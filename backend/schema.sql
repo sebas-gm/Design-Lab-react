@@ -1,4 +1,4 @@
--- Creates only Design Lab. Never deletes existing databases.
+-- Creates only Navishop. Never deletes existing databases.
 CREATE DATABASE IF NOT EXISTS design_lab_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE design_lab_db;
 

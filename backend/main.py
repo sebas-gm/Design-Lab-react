@@ -34,7 +34,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title='Design Lab API', lifespan=lifespan)
+app = FastAPI(title='Navishop API', lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=[origin], allow_credentials=True,
                    allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], allow_headers=['Content-Type'])
 

@@ -18,7 +18,7 @@ export async function api(path, options = {}) {
     });
   } catch {
     throw new Error(
-      "No se pudo conectar con Design Lab. Comprueba que FastAPI está iniciado.",
+      "No se pudo conectar con Navishop. Comprueba que FastAPI está iniciado.",
     );
   }
   if (response.status === 204) return null;

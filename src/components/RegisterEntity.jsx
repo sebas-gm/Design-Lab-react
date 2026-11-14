@@ -21,12 +21,12 @@ export default function RegisterEntity({ kind }) {
       {kind === "negocios" && user.tipo_cuenta === "personal" && (
         <p>
           Al guardar tu primer negocio se activará tu cuenta de negocios. Podrás
-          seguir explorando Design Lab como siempre.
+          seguir explorando Navishop como siempre.
         </p>
       )}
       <p>
         {kind === "negocios"
-          ? "Haz que más personas descubran tu negocio cerca de TECBA."
+          ? "Haz que más personas descubran tu negocio."
           : "Agrega un producto a tu catálogo."}
       </p>
       <EntityForm kind={kind} onSaved={() => navigate("/dashboard")} />

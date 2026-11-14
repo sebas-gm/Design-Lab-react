@@ -43,7 +43,7 @@ export default function AuthForm({ register = false }) {
         ← Volver a la bienvenida
       </Link>
       <h1>{register ? "Crear una cuenta" : "Iniciar sesión"}</h1>
-      <p>Descubre negocios, videos y promociones cerca de TECBA.</p>
+      <p>Descubre negocios, videos y promociones.</p>
       <form onSubmit={submit}>
         {register && (
           <label>
@@ -97,7 +97,7 @@ export default function AuthForm({ register = false }) {
         </button>
         {message && <p role="alert">{message}</p>}
       </form>
-      <p>
+      <p className="auth-switch">
         <Link to={register ? "/login" : "/registro"} state={location.state}>
           {register ? "Ya tengo una cuenta" : "Crear una cuenta"}
         </Link>

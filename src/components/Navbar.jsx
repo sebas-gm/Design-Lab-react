@@ -107,10 +107,10 @@ export default function Navbar() {
         )}
         <Link to={clientView ? "/inicio" : accountHome(user)} className="brand">
           <span className="brand-symbol">
-            D<span>•</span>
+            N<span>•</span>
           </span>
           <span>
-            Design Lab
+            Navishop
             <small>
               {workspace
                 ? "El espacio de tu negocio"
@@ -119,7 +119,7 @@ export default function Navbar() {
           </span>
         </Link>
         {user && clientView && (
-          <nav className="topbar-tabs" aria-label="Explorar Design Lab">
+          <nav className="topbar-tabs" aria-label="Explorar Navishop">
             {links(publicLinks)}
           </nav>
         )}
@@ -128,7 +128,7 @@ export default function Navbar() {
             <input
               name="q"
               aria-label="Buscar negocios y productos"
-              placeholder="Busca algo cerca de TECBA…"
+              placeholder="Busca algo..."
             />
             <button aria-label="Buscar">⌕</button>
           </form>
@@ -152,7 +152,7 @@ export default function Navbar() {
           >
             {user && (
               <span className="topbar-user-avatar" aria-hidden="true">
-                <span>{user.nombre?.[0]?.toUpperCase() || "D"}</span>
+              <span>{user.nombre?.[0]?.toUpperCase() || "N"}</span>
                 {user.avatar && (
                   <img
                     src={user.avatar}
@@ -198,7 +198,7 @@ export default function Navbar() {
               {user?.avatar ? (
                 <img src={user.avatar} alt="" />
               ) : (
-                user?.nombre?.[0]?.toUpperCase() || "D"
+                user?.nombre?.[0]?.toUpperCase() || "N"
               )}
             </span>
             <div>

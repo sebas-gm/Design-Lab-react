@@ -1,7 +1,7 @@
 function Footer() {
   return (
     <footer>
-      <p>© 2026 Design Lab. Todos los derechos reservados.</p>
+      <p>© 2026 Navishop. Todos los derechos reservados.</p>
     </footer>
   );
 }

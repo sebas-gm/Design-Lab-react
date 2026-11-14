@@ -10,11 +10,10 @@ function Hero() {
           Descubre negocios locales
         </span>
 
-        <h1>Todo lo que necesitas, cerca de TECBA</h1>
+        <h1>Todo lo que necesitas, en un solo lugar</h1>
 
         <p>
-          Descubre emprendimientos, productos y promociones
-          de los negocios cercanos a tu instituto.
+          Descubre emprendimientos, productos y promociones más cerca de ti.
         </p>
 
         <div className="hero-botones">

@@ -13,7 +13,7 @@ export default function AppLayout() {
     user?.tipo_cuenta === "negocios" && !isClientView(user, pathname);
   if (["/", "/login", "/registro"].includes(pathname)) {
     return (
-      <div className="entry-layout">
+      <div className={`entry-layout ${pathname === '/' ? 'welcome-layout' : ''}`}>
         <Outlet />
       </div>
     );

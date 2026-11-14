@@ -47,7 +47,7 @@ function ConfirmationDialog({ message, action, onAnswer }) {
       }}
     >
       <div className="confirmation-decoration" aria-hidden="true" />
-      <span className="confirmation-brand">DESIGN LAB</span>
+      <span className="confirmation-brand">NAVISHOP</span>
       <div className="confirmation-icon" aria-hidden="true">
         {action === "delete" ? "!" : "?"}
       </div>
@@ -59,7 +59,7 @@ function ConfirmationDialog({ message, action, onAnswer }) {
           className="confirmation-no"
           onClick={() => onAnswer(false)}
         >
-          No, cancelar
+          Cancelar
         </button>
         <button className="confirmation-yes" onClick={() => onAnswer(true)}>
           {labels[action]}
