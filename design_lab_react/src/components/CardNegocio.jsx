@@ -15,6 +15,8 @@ function CardNegocio({ id, nombre, categoria, descripcion, imagen }) {
   return (
     <div className="card-negocio">
       <img
+        loading="lazy"
+        onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = "/product-placeholder.svg"; }}
         src={imagenNegocio}
         alt={nombre}
         className="card-negocio-imagen"

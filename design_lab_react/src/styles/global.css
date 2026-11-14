@@ -9,3 +9,32 @@ body {
   background-color: #f7f5fc;
   color: #2d2438;
 }
+
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+main { flex: 1; width: 100%; }
+main:not(.login):not(.registro):not(.registrar-negocio) { max-width: 1400px; margin-inline: auto; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; border-radius: 8px; padding: 10px 16px; border: 1px solid #6c2bd9; background: #6c2bd9; color: white; }
+button:disabled { opacity: .6; cursor: wait; }
+input, select, textarea { max-width: 100%; }
+label { display: block; font-weight: 600; }
+label > input:not([type=checkbox]), label > select, label > textarea { display: block; width: 100%; margin-top: 7px; }
+:focus-visible { outline: 3px solid #9b6deb; outline-offset: 3px; }
+footer { text-align: center; padding: 30px 16px; color: #655879; border-top: 1px solid #e4d9f3; margin-top: 35px; }
+.api-status { padding: 16px; background: #eee5ff; text-align: center; }
+[role=alert] { color: #922546; line-height: 1.6; }
+.entity-form { display: flex; flex-direction: column; gap: 16px; }
+.entity-form input, .entity-form select, .entity-form textarea { padding: 12px; border: 1px solid #d5c8e7; border-radius: 8px; }
+.checkbox-label { display: flex; gap: 10px; align-items: center; }
+.coordinate-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.producto-imagen { width: 100%; height: 185px; object-fit: cover; border-radius: 8px; margin-bottom: 16px; }
+.location-map { margin: 28px 0; }
+.location-map iframe { width: 100%; height: 320px; border: 1px solid #d5c8e7; border-radius: 12px; margin-block: 15px; }
+.migration-panel { padding: 22px; border: 1px solid #dfccff; border-radius: 12px; margin-block: 24px; background: white; }
+.migration-panel p { margin-block: 14px; line-height: 1.6; }
+.migration-panel button { margin-bottom: 8px; }
+@media(max-width:600px) {
+  main.dashboard, main.administrar-negocios, main.administrar-productos, main.administrar-promociones { padding: 24px 16px; }
+  main.login, main.registro, main.registrar-negocio { width: calc(100% - 32px); padding: 24px; }
+  .coordinate-fields { grid-template-columns: 1fr; }
+}

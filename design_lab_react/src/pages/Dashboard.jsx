@@ -1,3 +1,4 @@
+import LegacyImport from '../components/LegacyImport';
 
 import { Link } from 'react-router-dom';
 import '../styles/dashboard.css';
@@ -8,6 +9,7 @@ function Dashboard() {
       <h1>Panel de administración</h1>
       <p>Bienvenido al panel de Design Lab.</p>
 
+      <LegacyImport />
       <div className="dashboard-contenedor">
 
         <div className="dashboard-card">

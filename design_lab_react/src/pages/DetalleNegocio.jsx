@@ -1,23 +1,16 @@
+import LocationMap from '../components/LocationMap';
+import { useLab } from '../context';
 
 import { useParams, Link } from 'react-router-dom';
-import { negocios } from '../data/negocios';
-import { productos } from '../data/productos';
+
+
 import CardProducto from '../components/CardProducto';
 import '../styles/detalleNegocio.css';
 
 function DetalleNegocio() {
   const { id } = useParams();
 
-  const negociosGuardados = JSON.parse(
-    localStorage.getItem('negociosRegistrados') || '[]'
-  );
-
-  const productosGuardados = JSON.parse(
-    localStorage.getItem('productosRegistrados') || '[]'
-  );
-
-  const todosLosNegocios = [...negocios, ...negociosGuardados];
-  const todosLosProductos = [...productos, ...productosGuardados];
+  const { negocios: todosLosNegocios, productos: todosLosProductos } = useLab();
 
   const negocio = todosLosNegocios.find(
     (item) => item.id === Number(id)
@@ -71,6 +64,7 @@ function DetalleNegocio() {
         )}
       </section>
 
+      <LocationMap latitud={negocio.latitud} longitud={negocio.longitud} />
       <section className="detalle-productos">
         <h2>Productos disponibles</h2>
 
@@ -81,7 +75,8 @@ function DetalleNegocio() {
             {productosNegocio.map((producto) => (
               <CardProducto
                 key={producto.id}
-                nombre={producto.nombre}
+                imagen={producto.imagen}
+              nombre={producto.nombre}
                 precio={producto.precio}
                 descripcion={producto.descripcion}
                 promocion={producto.promocion}

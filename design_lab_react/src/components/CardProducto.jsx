@@ -2,9 +2,10 @@
 import { Link } from 'react-router-dom';
 import '../styles/cardProducto.css';
 
-function CardProducto({ nombre, precio, descripcion, promocion, negocioId, nombreNegocio }) {
+function CardProducto({ imagen, nombre, precio, descripcion, promocion, negocioId, nombreNegocio }) {
   return (
     <div className="card-producto">
+      <img className="producto-imagen" src={imagen || "/product-placeholder.svg"} alt={nombre} loading="lazy" onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = "/product-placeholder.svg"; }} />
       {promocion && (
         <span className="etiqueta-promo">Promoción</span>
       )}

@@ -1,26 +1,18 @@
+import { useLab } from '../context';
 
 import { useState } from 'react';
 import CardNegocio from '../components/CardNegocio';
 import CardProducto from '../components/CardProducto';
 import Buscador from '../components/Buscador';
-import { negocios } from '../data/negocios';
-import { productos } from '../data/productos';
+
+
 import '../styles/home.css';
 import Hero from '../components/Hero';
 
 function Home() {
   const [busqueda, setBusqueda] = useState('');
 
-  const negociosGuardados = JSON.parse(
-    localStorage.getItem('negociosRegistrados') || '[]'
-  );
-
-  const productosGuardados = JSON.parse(
-    localStorage.getItem('productosRegistrados') || '[]'
-  );
-
-  const todosLosNegocios = [...negocios, ...negociosGuardados];
-  const todosLosProductos = [...productos, ...productosGuardados];
+  const { negocios: todosLosNegocios, productos: todosLosProductos } = useLab();
 
   const negociosFiltrados = todosLosNegocios.filter((negocio) =>
     negocio.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -47,6 +39,7 @@ function Home() {
         {negociosFiltrados.map((negocio) => (
           <CardNegocio
             key={negocio.id}
+            imagen={negocio.imagen}
             id={negocio.id}
             nombre={negocio.nombre}
             categoria={negocio.categoria}
@@ -70,6 +63,7 @@ function Home() {
           return (
             <CardProducto
               key={producto.id}
+              imagen={producto.imagen}
               nombre={producto.nombre}
               precio={producto.precio}
               descripcion={producto.descripcion}

@@ -1,0 +1,225 @@
+import os
+import secrets
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
+
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
+
+from backend.database import Base, get_db, make_engine
+from backend.models import Business, Product, Session, User
+from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register
+from backend.security import hash_password, token_hash, verify_password
+
+engine = make_engine()
+origin = os.getenv('FRONTEND_ORIGIN', 'http://localhost:5173')
+secure = os.getenv('COOKIE_SECURE', 'false').lower() == 'true'
+
+
+@asynccontextmanager
+async def lifespan(app):
+    # Only creates missing tables. Never drops or replaces existing data.
+    Base.metadata.create_all(engine)
+    yield
+
+
+app = FastAPI(title='Design Lab API', lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=[origin], allow_credentials=True,
+                   allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], allow_headers=['Content-Type'])
+
+
+@app.middleware('http')
+async def check_origin(request: Request, call_next):
+    if request.method not in ('GET', 'HEAD', 'OPTIONS'):
+        # Browser mutations must originate from our frontend (CSRF protection).
+        if request.headers.get('origin') not in (None, origin):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({'detail': 'Origen no permitido'}, status_code=403)
+        if request.cookies.get('designlab_session') and not request.headers.get('origin'):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({'detail': 'Se requiere Origin'}, status_code=403)
+    response = await call_next(request)
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+def now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def current_user(request: Request, db=Depends(get_db)):
+    token = request.cookies.get('designlab_session', '')
+    session = db.get(Session, token_hash(token))
+    if not session or session.expires_at <= now():
+        raise HTTPException(401, 'Inicia sesión para continuar')
+    return db.get(User, session.user_id)
+
+
+def public_user(user):
+    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo}
+
+
+def serialize(record):
+    return {column.name: getattr(record, column.name) for column in record.__table__.columns if column.name != 'legacy_id'}
+
+
+def owned(db, business_id, user):
+    business = db.get(Business, business_id)
+    if not business:
+        raise HTTPException(404, 'Negocio no encontrado')
+    if business.owner_id != user.id:
+        raise HTTPException(403, 'No tienes permiso sobre este negocio')
+    return business
+
+
+def issue_session(db, user, response):
+    token = secrets.token_urlsafe(32)
+    db.add(Session(token_hash=token_hash(token), user_id=user.id, expires_at=now() + timedelta(hours=8)))
+    db.commit()
+    response.set_cookie('designlab_session', token, httponly=True, secure=secure, samesite='lax', max_age=28800, path='/')
+    return public_user(user)
+
+
+@app.get('/api/health')
+def health(db=Depends(get_db)):
+    db.execute(text('SELECT 1'))
+    return {'status': 'ok'}
+
+
+@app.post('/api/auth/register', status_code=201)
+def register(data: Register, response: Response, db=Depends(get_db)):
+    user = User(nombre=data.nombre, correo=str(data.correo).lower(), password_hash=hash_password(data.contrasena))
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, 'El correo ya está registrado')
+    return issue_session(db, user, response)
+
+
+@app.post('/api/auth/login')
+def login(data: Login, response: Response, db=Depends(get_db)):
+    user = db.scalar(select(User).where(User.correo == str(data.correo).lower()))
+    # Hash even for unknown accounts to avoid a fast account-discovery path.
+    valid = verify_password(data.contrasena, user.password_hash if user else DUMMY_HASH)
+    if not user or not valid:
+        raise HTTPException(401, 'Correo o contraseña incorrectos')
+    return issue_session(db, user, response)
+
+
+DUMMY_HASH = hash_password(secrets.token_urlsafe(32))
+
+
+@app.get('/api/auth/me')
+def me(user=Depends(current_user)):
+    return public_user(user)
+
+
+@app.post('/api/auth/logout', status_code=204)
+def logout(request: Request, response: Response, db=Depends(get_db)):
+    session = db.get(Session, token_hash(request.cookies.get('designlab_session', '')))
+    if session:
+        db.delete(session)
+        db.commit()
+    response.delete_cookie('designlab_session', path='/')
+
+
+@app.get('/api/negocios')
+def businesses(db=Depends(get_db)):
+    return [serialize(item) for item in db.scalars(select(Business).order_by(Business.id.desc()))]
+
+
+@app.get('/api/productos')
+def products(db=Depends(get_db)):
+    return [serialize(item) for item in db.scalars(select(Product).order_by(Product.id.desc()))]
+
+
+@app.post('/api/negocios', status_code=201)
+def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
+    item = Business(**data.model_dump(), owner_id=user.id)
+    db.add(item)
+    db.commit()
+    return serialize(item)
+
+
+@app.put('/api/negocios/{item_id}')
+def update_business(item_id: int, data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
+    item = owned(db, item_id, user)
+    for key, value in data.model_dump().items():
+        setattr(item, key, value)
+    db.commit()
+    return serialize(item)
+
+
+@app.delete('/api/negocios/{item_id}', status_code=204)
+def delete_business(item_id: int, user=Depends(current_user), db=Depends(get_db)):
+    item = owned(db, item_id, user)
+    if db.scalar(select(Product.id).where(Product.negocioId == item_id).limit(1)):
+        raise HTTPException(409, 'Elimina primero sus productos; no se borrarán en cascada')
+    db.delete(item)
+    db.commit()
+
+
+@app.post('/api/productos', status_code=201)
+def create_product(data: ProductIn, user=Depends(current_user), db=Depends(get_db)):
+    owned(db, data.negocioId, user)
+    item = Product(**data.model_dump())
+    db.add(item)
+    db.commit()
+    return serialize(item)
+
+
+def owned_product(db, item_id, user):
+    item = db.get(Product, item_id)
+    if not item:
+        raise HTTPException(404, 'Producto no encontrado')
+    owned(db, item.negocioId, user)
+    return item
+
+
+@app.put('/api/productos/{item_id}')
+def update_product(item_id: int, data: ProductIn, user=Depends(current_user), db=Depends(get_db)):
+    item = owned_product(db, item_id, user)
+    owned(db, data.negocioId, user)
+    for key, value in data.model_dump().items():
+        setattr(item, key, value)
+    db.commit()
+    return serialize(item)
+
+
+@app.patch('/api/productos/{item_id}/promocion')
+def promotion(item_id: int, data: Promotion, user=Depends(current_user), db=Depends(get_db)):
+    item = owned_product(db, item_id, user)
+    item.promocion = data.promocion
+    db.commit()
+    return serialize(item)
+
+
+@app.delete('/api/productos/{item_id}', status_code=204)
+def delete_product(item_id: int, user=Depends(current_user), db=Depends(get_db)):
+    db.delete(owned_product(db, item_id, user))
+    db.commit()
+
+
+@app.post('/api/importar')
+def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_db)):
+    mapping = {}
+    for old in data.negocios:
+        item = db.scalar(select(Business).where(Business.owner_id == user.id, Business.legacy_id == str(old.id)))
+        if not item:
+            item = Business(**old.model_dump(exclude={'id'}), owner_id=user.id, legacy_id=str(old.id))
+            db.add(item)
+            db.flush()
+        mapping[old.id] = item.id
+    for old in data.productos:
+        if old.negocioId not in mapping:
+            raise HTTPException(422, 'Un producto no tiene un negocio incluido en la importación')
+        business_id = mapping[old.negocioId]
+        if not db.scalar(select(Product).where(Product.negocioId == business_id, Product.legacy_id == str(old.id))):
+            db.add(Product(**old.model_dump(exclude={'id', 'negocioId'}), negocioId=business_id, legacy_id=str(old.id)))
+    db.commit()
+    return {'message': 'Importación completada. Los datos originales siguen en el navegador.'}

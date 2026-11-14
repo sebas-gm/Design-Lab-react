@@ -1,0 +1,89 @@
+# Design Lab
+
+Directorio de negocios cercanos a TECBA. React + Vite, FastAPI, SQLAlchemy y MySQL. Conserva el diseño morado, las rutas y el catálogo original como datos de ejemplo importables.
+
+## Requisitos
+
+- Node.js compatible con Vite 8 (22.12+), Python 3.12+ y MySQL 8.
+- Una base de datos MySQL y un usuario autorizado. No se proporcionan contraseñas ni se crean cuentas MySQL automáticamente.
+
+## Ejecutar en Windows (PowerShell)
+
+Desde la carpeta raíz `Proyecto React`:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -r backend/requirements.txt
+Copy-Item backend/.env.example backend/.env
+```
+
+Si `backend/.env` ya existe, edítalo sin sobrescribirlo. Está preparado para `localhost:3306`, base `design_lab_db`, usuario `root`. Completa `MYSQL_PASSWORD` con tu contraseña real. La contraseña permanece local y Git ignora el archivo. Si contiene `#` o espacios, escríbela entre comillas en el archivo `.env`. Las contraseñas con caracteres especiales se admiten sin codificación URL.
+
+MySQL se detectó instalado: servicio `MySQL80` activo y puerto `3306` escuchando. No se intentaron contraseñas vacías. Después de guardar tu contraseña, crea la base y las tablas con:
+
+```powershell
+.\.venv\Scripts\python -m backend.init_db
+```
+
+El comando crea únicamente la base configurada si no existe, crea tablas ausentes y verifica `SELECT 1`. Si la base existe, conserva su contenido. También puedes ejecutar `backend/schema.sql` en MySQL Workbench para crear `design_lab_db` y las tablas. El usuario necesita permiso CREATE para la instalación.
+
+Instalación local verificada el 14 de noviembre de 2026: `design_lab_db` creada, tablas `users`, `businesses`, `products` y `sessions` presentes. FastAPI respondió correctamente en `/api/health`, `/api/negocios` y `/api/productos` usando MySQL real. No se crearon cuentas ni registros de prueba en esta base.
+
+```powershell
+.\.venv\Scripts\python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+El inicio crea únicamente tablas ausentes: no borra ni reemplaza datos. `backend/schema.sql` contiene el esquema equivalente para revisión o instalación manual en la base elegida. No contiene instrucciones DROP. Las modificaciones futuras del esquema existente requerirán una migración explícita: `create_all` no modifica tablas existentes.
+
+En otra terminal:
+
+```powershell
+cd design_lab_react
+npm.cmd ci
+npm.cmd run dev
+```
+
+Abre `http://localhost:5173`. Usa este host también para iniciar sesión: Vite reenvía `/api` a FastAPI. La documentación interactiva está en `http://127.0.0.1:8000/docs` y la comprobación de conexión en `/api/health`. Para probar escrituras autenticadas desde Swagger, configura temporalmente `FRONTEND_ORIGIN=http://127.0.0.1:8000`; restablece el origen del frontend después.
+
+## Uso y conservación de datos
+
+1. Registra una cuenta con contraseña de 12 caracteres como mínimo.
+2. En **Mi panel**, crea negocios, productos y activa promociones. Cada usuario administra exclusivamente sus negocios; cualquier visitante puede consultar el catálogo.
+3. Para los registros anteriores, abre el mismo navegador, perfil y origen donde los guardaste. En **Mi panel → Importar mis datos locales**, revisa el conteo y confirma. La importación es transaccional y repetible por cuenta sin duplicados; nunca vacía localStorage. Un producto sin negocio en el lote produce un error y revierte todo el lote. Un JSON inválido se informa sin borrarlo. Los datos locales anteriores no tienen propietario verificable: importa solo tus registros.
+4. El catálogo de ejemplo original se conserva en `src/data`. Puedes importarlo voluntariamente; sus direcciones son pendientes de verificar y no tienen coordenadas inventadas. Los registros de ejemplo importados pertenecen a tu cuenta.
+5. Introduce URLs HTTP/HTTPS para las imágenes. Los productos sin imagen muestran una ilustración local. No hay carga de archivos al servidor.
+6. Registra latitud y longitud juntas para mostrar el mapa OpenStreetMap del negocio. Para la referencia configurable de TECBA, copia `design_lab_react/.env.example` a `design_lab_react/.env`, completa `VITE_TECBA_NAME`, `VITE_TECBA_LATITUDE` y `VITE_TECBA_LONGITUDE` y reinicia Vite. Se muestra en el catálogo. La sede exacta sigue pendiente; no se calculan distancias ni se afirma que una ubicación esté verificada. El mapa y las fotografías externas necesitan Internet.
+
+Eliminar un negocio con productos está bloqueado para evitar borrar productos en cascada. El usuario debe eliminar primero cada producto y confirmar las acciones.
+
+## Autenticación
+
+Contraseñas con scrypt y sal aleatoria por usuario. Sesiones aleatorias de ocho horas, guardadas como SHA-256 en la base; cookie HttpOnly y SameSite=Lax, revocada al cerrar sesión. Validación de Origin en escrituras con cookie para prevenir CSRF y CORS limitado al origen configurado. No se guardan contraseñas ni tokens en localStorage. No hay rol administrador global ni elevación de permisos en el registro.
+
+Para producción usa HTTPS, `COOKIE_SECURE=true`, limita intentos de acceso en el proxy, sirve frontend y `/api` desde el mismo origen, limita permisos del usuario MySQL y realiza copias de seguridad. El servidor de Vite es para desarrollo. `npm.cmd run build` genera `dist`; el servidor final debe reenviar `/api` al backend y resolver las rutas React hacia `index.html`. No uses `DATABASE_URL` de pruebas para producción.
+
+## Verificación
+
+```powershell
+# Desde Proyecto React: SQLite en memoria, sin tocar MySQL
+.\.venv\Scripts\python -m pytest backend/tests -q -p no:cacheprovider
+cd design_lab_react
+npm.cmd run lint
+npm.cmd run build
+```
+
+Las pruebas de API cubren registro, correos duplicados, login incorrecto/correcto, cookie, sesión y logout; creación/edición/eliminación; acceso entre propietarios; promociones; validación de imágenes/coordenadas; CSRF e importación atómica sin duplicados. Esta suite usa SQLite en memoria; la conexión, las tablas y los endpoints de lectura también se comprobaron con MySQL real. Queda pendiente el recorrido visual completo y las escrituras desde la interfaz sobre MySQL. Existe una advertencia de deprecación de Starlette sobre el cliente de pruebas httpx, que no impide ejecutar la suite.
+
+También se verificó un recorrido HTTP real por `Vite → /api → FastAPI` con SQLite en memoria: página inicial, health, registro, cookie/sesión, negocio, producto, promoción, catálogo y cierre de sesión. Los servidores temporales se detuvieron después y esos datos de prueba desaparecieron. No hubo un navegador conectado disponible para comprobar visualmente escritorio/móvil.
+
+## Organización y respaldo
+
+Relaciones: `users` 1:N `businesses`, `businesses` 1:N `products`, `users` 1:N `sessions`. La promoción se conserva como estado booleano `products.promocion`, igual que en la aplicación original: activa/desactiva el destacado del producto, sin fechas ni precios promocionales separados. Propietarios y permisos se resuelven mediante `businesses.owner_id`. Los identificadores de importación tienen restricciones únicas por propietario/negocio. Los precios usan DECIMAL(10,2) y las ubicaciones DECIMAL(10,7).
+
+- `backend/main.py`: API y permisos; `models.py`: tablas; `schemas.py`: validaciones; `security.py`: contraseñas y sesiones; `database.py`: configuración.
+- `design_lab_react/src/api.js`, `context.js`, `components/LabProvider.jsx`: conexión y estado compartido.
+- `components/EntityForm.jsx`, `ManageEntities.jsx`, `AuthForm.jsx`: formularios reutilizables; páginas existentes conservan sus rutas.
+- `components/LegacyImport.jsx`: importación voluntaria; `LocationMap.jsx`: mapa.
+- `backend/tests/test_api.py`: pruebas aisladas.
+
+Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Para inspeccionarlo sin modificar tu trabajo usa `git show respaldo-inicial:ruta/del/archivo` o crea otra carpeta con `git worktree add ../design-lab-respaldo respaldo-inicial`. No uses `git reset --hard` para consultarlo.

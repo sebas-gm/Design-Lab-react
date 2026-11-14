@@ -4,7 +4,8 @@ function Buscador({ busqueda, setBusqueda }) {
     <div className="buscador">
       <input
         type="text"
-        placeholder="Buscar negocios..."
+        aria-label="Buscar negocios y productos"
+        placeholder="Buscar negocios y productos..."
         value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
       />

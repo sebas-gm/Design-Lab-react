@@ -1,3 +1,5 @@
+import LabProvider from './components/LabProvider';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
@@ -18,7 +20,7 @@ import Footer from './components/Footer';
 
 function App() {
   return (
-    <BrowserRouter>
+    <LabProvider><BrowserRouter>
       <Navbar />
 
       <Routes>
@@ -27,16 +29,17 @@ function App() {
         <Route path="/negocios/:id" element={<DetalleNegocio />} />
         <Route path="/registro" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/registrar-negocio" element={<RegistrarNegocio />} />
-        <Route path="/registrar-producto" element={<RegistrarProducto />} />
-        <Route path="/administrar-productos" element={<AdministrarProductos />} />
-        <Route path="/administrar-negocios" element={<AdministrarNegocios />} />
-        <Route path="/administrar-promociones" element={<AdministrarPromociones />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/registrar-negocio" element={<ProtectedRoute><RegistrarNegocio /></ProtectedRoute>} />
+        <Route path="/registrar-producto" element={<ProtectedRoute><RegistrarProducto /></ProtectedRoute>} />
+        <Route path="/administrar-productos" element={<ProtectedRoute><AdministrarProductos /></ProtectedRoute>} />
+        <Route path="/administrar-negocios" element={<ProtectedRoute><AdministrarNegocios /></ProtectedRoute>} />
+        <Route path="/administrar-promociones" element={<ProtectedRoute><AdministrarPromociones /></ProtectedRoute>} />
+        <Route path="*" element={<main><h1>Página no encontrada</h1><a href="/">Volver al inicio</a></main>} />
       </Routes>
 
       <Footer />
-    </BrowserRouter>
+    </BrowserRouter></LabProvider>
   );
 }
 

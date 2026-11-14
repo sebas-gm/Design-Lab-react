@@ -1,4 +1,8 @@
-# React + Vite
+# Design Lab · Frontend
+
+Consulta el [README principal](../README.md) para instalar React, configurar FastAPI/MySQL, ejecutar pruebas y conservar los datos anteriores. Este frontend se inicia con `npm.cmd run dev` y requiere el backend en el puerto 8000.
+
+## Referencia del template original
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

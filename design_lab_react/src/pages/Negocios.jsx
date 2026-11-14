@@ -1,8 +1,11 @@
+import { useLab } from '../context';
 
 import { useState } from 'react';
 import CardNegocio from '../components/CardNegocio';
+import CardProducto from '../components/CardProducto';
+import TecbaReference from '../components/TecbaReference';
 import Buscador from '../components/Buscador';
-import { negocios } from '../data/negocios';
+
 import '../styles/home.css';
 import '../styles/negocios.css';
 
@@ -10,16 +13,14 @@ function Negocios() {
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState('Todas');
 
-  const negociosGuardados = JSON.parse(
-    localStorage.getItem('negociosRegistrados') || '[]'
-  );
-
-  const todosLosNegocios = [...negocios, ...negociosGuardados];
+  const { negocios: todosLosNegocios, productos } = useLab();
+  const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const query = normalize(busqueda);
 
   const negociosFiltrados = todosLosNegocios.filter((negocio) => {
     const coincideBusqueda =
-      negocio.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      negocio.categoria.toLowerCase().includes(busqueda.toLowerCase());
+      normalize(`${negocio.nombre} ${negocio.categoria} ${negocio.descripcion} ${negocio.direccion}`).includes(query) ||
+      productos.some(p => p.negocioId === negocio.id && normalize(p.nombre).includes(query));
 
     const coincideCategoria =
       categoria === 'Todas' || negocio.categoria === categoria;
@@ -31,10 +32,12 @@ function Negocios() {
     <main className="pagina-negocios">
       <h1>Todos los negocios</h1>
       <p>Explora los emprendimientos cercanos a TECBA.</p>
+      <TecbaReference />
 
       <Buscador busqueda={busqueda} setBusqueda={setBusqueda} />
 
       <select
+        aria-label="Filtrar por categoría"
         value={categoria}
         onChange={(e) => setCategoria(e.target.value)}
       >
@@ -50,6 +53,7 @@ function Negocios() {
         {negociosFiltrados.map((negocio) => (
           <CardNegocio
             key={negocio.id}
+            imagen={negocio.imagen}
             id={negocio.id}
             nombre={negocio.nombre}
             categoria={negocio.categoria}
@@ -61,6 +65,11 @@ function Negocios() {
       {negociosFiltrados.length === 0 && (
         <p>No se encontraron negocios.</p>
       )}
+      <h2>Catálogo de productos</h2>
+      <section className="contenedor-negocios">
+        {productos.filter(p => negociosFiltrados.some(n => n.id === p.negocioId) && normalize(`${p.nombre} ${p.descripcion}`).includes(query)).map(p =>
+          <CardProducto key={p.id} {...p} nombreNegocio={todosLosNegocios.find(n => n.id === p.negocioId)?.nombre} />)}
+      </section>
     </main>
   );
 }
