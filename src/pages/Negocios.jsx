@@ -1,29 +1,42 @@
-import { useLab } from '../context';
+import { useLab } from "../context";
 
-import { useState } from 'react';
-import CardNegocio from '../components/CardNegocio';
-import CardProducto from '../components/CardProducto';
-import TecbaReference from '../components/TecbaReference';
-import Buscador from '../components/Buscador';
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import CardNegocio from "../components/CardNegocio";
+import CardProducto from "../components/CardProducto";
+import TecbaReference from "../components/TecbaReference";
+import Buscador from "../components/Buscador";
 
-import '../styles/home.css';
-import '../styles/negocios.css';
+import "../styles/home.css";
+import "../styles/negocios.css";
 
 function Negocios() {
-  const [busqueda, setBusqueda] = useState('');
-  const [categoria, setCategoria] = useState('Todas');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const busqueda = searchParams.get("q") || "";
+  const setBusqueda = (value) =>
+    setSearchParams(value ? { q: value } : {}, { replace: true });
+  const [categoria, setCategoria] = useState("Todas");
 
   const { negocios: todosLosNegocios, productos } = useLab();
-  const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const normalize = (value) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
   const query = normalize(busqueda);
 
   const negociosFiltrados = todosLosNegocios.filter((negocio) => {
     const coincideBusqueda =
-      normalize(`${negocio.nombre} ${negocio.categoria} ${negocio.descripcion} ${negocio.direccion}`).includes(query) ||
-      productos.some(p => p.negocioId === negocio.id && normalize(p.nombre).includes(query));
+      normalize(
+        `${negocio.nombre} ${negocio.categoria} ${negocio.descripcion} ${negocio.direccion}`,
+      ).includes(query) ||
+      productos.some(
+        (p) =>
+          p.negocioId === negocio.id && normalize(p.nombre).includes(query),
+      );
 
     const coincideCategoria =
-      categoria === 'Todas' || negocio.categoria === categoria;
+      categoria === "Todas" || negocio.categoria === categoria;
 
     return coincideBusqueda && coincideCategoria;
   });
@@ -62,13 +75,24 @@ function Negocios() {
         ))}
       </section>
 
-      {negociosFiltrados.length === 0 && (
-        <p>No se encontraron negocios.</p>
-      )}
+      {negociosFiltrados.length === 0 && <p>No se encontraron negocios.</p>}
       <h2>Catálogo de productos</h2>
       <section className="contenedor-negocios">
-        {productos.filter(p => negociosFiltrados.some(n => n.id === p.negocioId) && normalize(`${p.nombre} ${p.descripcion}`).includes(query)).map(p =>
-          <CardProducto key={p.id} {...p} nombreNegocio={todosLosNegocios.find(n => n.id === p.negocioId)?.nombre} />)}
+        {productos
+          .filter(
+            (p) =>
+              negociosFiltrados.some((n) => n.id === p.negocioId) &&
+              normalize(`${p.nombre} ${p.descripcion}`).includes(query),
+          )
+          .map((p) => (
+            <CardProducto
+              key={p.id}
+              {...p}
+              nombreNegocio={
+                todosLosNegocios.find((n) => n.id === p.negocioId)?.nombre
+              }
+            />
+          ))}
       </section>
     </main>
   );

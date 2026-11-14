@@ -143,3 +143,52 @@ def test_additive_migration_preserves_existing_business():
         row = connection.execute(text('SELECT nombre, telefono, logo FROM businesses')).one()
         assert row == ('Anterior', '', '')
     isolated.dispose()
+
+
+def test_video_permissions_and_links(clients):
+    owner, other = clients
+    assert owner.get('/api/videos').json() == []
+    assert owner.post('/api/videos', json={'negocioId': 1, 'titulo': 'Prueba', 'url': 'https://youtu.be/M7lc1UVf-VE'}).status_code == 401
+    signup(owner, 'video-owner@example.com')
+    signup(other, 'video-other@example.com')
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    payload = {'negocioId': bid, 'titulo': 'Nuestro negocio', 'url': 'https://youtu.be/M7lc1UVf-VE'}
+    assert other.post('/api/videos', json=payload).status_code == 403
+    response = owner.post('/api/videos', json=payload)
+    assert response.status_code == 201, response.text
+    video = response.json()
+    assert video['embed_url'] == 'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE'
+    assert other.get('/api/videos').json()[0]['id'] == video['id']
+    assert other.get('/api/mis-videos').json() == []
+    assert len(owner.get('/api/mis-videos').json()) == 1
+    assert other.put(f"/api/videos/{video['id']}", json=payload).status_code == 403
+    assert other.delete(f"/api/videos/{video['id']}").status_code == 403
+    tiktok = {**payload, 'url': 'https://www.tiktok.com/@scout2015/video/6718335390845095173'}
+    result = owner.put(f"/api/videos/{video['id']}", json=tiktok)
+    assert result.json()['plataforma'] == 'TikTok'
+    assert result.json()['embed_url'] == 'https://www.tiktok.com/player/v1/6718335390845095173'
+    assert owner.get(f'/api/videos?negocio_id={bid + 100}').json() == []
+    assert owner.get('/api/videos?offset=-1').status_code == 422
+    for url in ['javascript:alert(1)', 'https://youtube.com.evil.com/watch?v=M7lc1UVf-VE', 'https://127.0.0.1/video', 'https://www.youtube.com/watch?v=<script>', 'https://vm.tiktok.com/short', 'https://www.youtube.com:invalid/watch?v=M7lc1UVf-VE']:
+        assert owner.post('/api/videos', json={**payload, 'url': url}).status_code == 422
+    assert owner.delete(f'/api/negocios/{bid}').status_code == 409
+    assert owner.delete(f"/api/videos/{video['id']}").status_code == 204
+    assert owner.get('/api/videos').json() == []
+
+
+@pytest.mark.parametrize('url', ['https://www.youtube.com/watch?v=M7lc1UVf-VE', 'https://www.youtube.com/shorts/M7lc1UVf-VE', 'https://www.youtube.com/live/M7lc1UVf-VE'])
+def test_youtube_url_variants(url):
+    from backend.videos import video_source
+    assert video_source(url) == ('YouTube', 'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE')
+
+
+def test_video_pagination(clients):
+    owner, _ = clients
+    signup(owner, 'pagination@example.com')
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    for number in range(13):
+        assert owner.post('/api/videos', json={'negocioId': bid, 'titulo': str(number), 'url': 'https://youtu.be/M7lc1UVf-VE'}).status_code == 201
+    page_one = owner.get('/api/videos').json()
+    page_two = owner.get('/api/videos?offset=12').json()
+    assert len(page_one) == 12 and len(page_two) == 1
+    assert not {v['id'] for v in page_one} & {v['id'] for v in page_two}

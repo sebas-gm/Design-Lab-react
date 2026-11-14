@@ -49,3 +49,11 @@ class Product(Base):
     promocion = Column(Boolean, nullable=False, default=False)
     legacy_id = Column(String(80), nullable=True)
     __table_args__ = (UniqueConstraint('negocioId', 'legacy_id'),)
+
+
+class Video(Base):
+    __tablename__ = 'videos'
+    id = Column(Integer, primary_key=True)
+    negocioId = Column(ForeignKey('businesses.id'), nullable=False, index=True)
+    titulo = Column(String(160), nullable=False)
+    url = Column(String(2048), nullable=False)

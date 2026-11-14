@@ -95,6 +95,22 @@ Relaciones: `users` 1:N `businesses`, `businesses` 1:N `products`, `users` 1:N `
 Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Para inspeccionarlo sin modificar tu trabajo usa `git show respaldo-inicial:ruta/del/archivo` o crea otra carpeta con `git worktree add ../design-lab-respaldo respaldo-inicial`. No uses `git reset --hard` para consultarlo.
 
 
+## Barra lateral y videos
+
+La navegación lateral reúne Inicio, Negocios, Videos y Promociones. Al iniciar sesión añade las opciones existentes de administración y **Mis videos**. En móvil se abre con el botón de menú; se cierra al elegir una opción, pulsar Escape o tocar fuera del menú. El buscador superior abre el catálogo con el texto consultado.
+
+En **Mis videos**, el propietario selecciona uno de sus negocios e introduce título y enlace HTTPS. Puede editar o quitar sus enlaces. La pestaña pública **Videos** permite filtrar por negocio y cargar más resultados, en páginas de 12. El detalle del negocio también enlaza a sus videos.
+
+Se integran los reproductores oficiales de YouTube (incluye Shorts y directos) y TikTok mediante iframe, sin claves API. Se cargan cuando el visitante pulsa **Ver video**. La API de Design Lab valida dominios/identificadores y genera la dirección del reproductor; no descarga videos ni ejecuta HTML proporcionado por usuarios. MySQL guarda solamente `id`, `negocioId`, `titulo` y `url` en la tabla `videos`. Los archivos originales permanecen en la plataforma. No se siguen enlaces arbitrarios desde el servidor.
+
+Para TikTok usa `https://www.tiktok.com/@usuario/video/ID`; abre primero los enlaces cortos `vm.tiktok.com`/`vt.tiktok.com` en la plataforma y copia la dirección completa. En YouTube se admiten `watch?v=ID`, `youtu.be/ID`, `/shorts/ID`, `/live/ID` y `/embed/ID`. Otras plataformas todavía no están integradas. Los videos privados, eliminados o con inserción restringida pueden no reproducirse; siempre se ofrece un enlace a la plataforma original. La disponibilidad final depende del proveedor y de la conexión a Internet.
+
+El arranque del backend o `python -m backend.init_db` crea la tabla `videos` sin borrar registros existentes. No se permite eliminar un negocio que aún tenga productos o enlaces de video. Respaldo previo: `76b1aed`, etiqueta `respaldo-antes-sidebar-videos`.
+
+Verificación de esta etapa: once pruebas de API aprobadas, ESLint y compilación aprobados; tabla y endpoint `/api/videos` comprobados con MySQL real. La suite prueba enlaces, permisos, edición, eliminación, filtros y paginación. La reproducción real en cada plataforma y la revisión visual quedan pendientes en un navegador conectado.
+
+Reproductores utilizados: [YouTube](https://developers.google.com/youtube/player_parameters) y [TikTok](https://developers.tiktok.com/docs/en/embed-player).
+
 ## Carpeta unificada
 
 React se ejecuta directamente desde `Proyecto React`: `src/`, `public/`, `package.json` y `vite.config.js` están en la raíz. FastAPI permanece en `backend/`. Ejecuta `npm.cmd run dev` en la raíz e inicia FastAPI en otra terminal situada en esa misma carpeta.

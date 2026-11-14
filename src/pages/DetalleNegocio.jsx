@@ -53,6 +53,11 @@ function DetalleNegocio() {
         <span className="detalle-categoria">{negocio.categoria}</span>
 
         <h1>{negocio.nombre}</h1>
+        <p>
+          <Link to={`/videos?negocio=${negocio.id}`}>
+            Ver los videos de este negocio ↗
+          </Link>
+        </p>
         {negocio.logo && (
           <img
             src={negocio.logo}

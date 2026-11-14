@@ -54,3 +54,12 @@ CREATE TABLE IF NOT EXISTS products (
 	UNIQUE (`negocioId`, legacy_id),
 	FOREIGN KEY(`negocioId`) REFERENCES businesses (id)
 );
+
+CREATE TABLE IF NOT EXISTS videos (
+	id INTEGER NOT NULL AUTO_INCREMENT,
+	`negocioId` INTEGER NOT NULL,
+	titulo VARCHAR(160) NOT NULL,
+	url VARCHAR(2048) NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY(`negocioId`) REFERENCES businesses (id)
+);

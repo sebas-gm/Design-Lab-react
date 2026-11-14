@@ -70,6 +70,19 @@ class Promotion(Input):
     promocion: bool
 
 
+class VideoIn(Input):
+    negocioId: int = Field(gt=0)
+    titulo: str = Field(min_length=1, max_length=160)
+    url: str = Field(min_length=1, max_length=2048)
+
+    @field_validator('url')
+    @classmethod
+    def supported_url(cls, value):
+        from backend.videos import video_source
+        video_source(value)
+        return value
+
+
 class LegacyBusiness(BusinessIn):
     id: int = Field(gt=0)
 

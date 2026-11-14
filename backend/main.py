@@ -10,8 +10,9 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
 from backend.database import Base, get_db, make_engine
-from backend.models import Business, Product, Session, User
-from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register
+from backend.models import Business, Product, Session, User, Video
+from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn
+from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
 from backend.migrations import migrate_business_details
 from backend.uploads import UPLOAD_DIR, save_image
@@ -170,6 +171,8 @@ def delete_business(item_id: int, user=Depends(current_user), db=Depends(get_db)
     item = owned(db, item_id, user)
     if db.scalar(select(Product.id).where(Product.negocioId == item_id).limit(1)):
         raise HTTPException(409, 'Elimina primero sus productos; no se borrarán en cascada')
+    if db.scalar(select(Video.id).where(Video.negocioId == item_id).limit(1)):
+        raise HTTPException(409, 'Elimina primero los enlaces de video de este negocio')
     db.delete(item)
     db.commit()
 
@@ -233,6 +236,60 @@ def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_d
             db.add(Product(**old.model_dump(exclude={'id', 'negocioId'}), negocioId=business_id, legacy_id=str(old.id)))
     db.commit()
     return {'message': 'Importación completada. Los datos originales siguen en el navegador.'}
+
+
+def video_data(item):
+    provider, embed = video_source(item.url)
+    return {**serialize(item), 'plataforma': provider, 'embed_url': embed}
+
+
+@app.get('/api/videos')
+def list_videos(negocio_id: int | None = None, offset: int = 0, db=Depends(get_db)):
+    if offset < 0:
+        raise HTTPException(422, 'Página inválida')
+    query = select(Video).order_by(Video.id.desc())
+    if negocio_id is not None:
+        query = query.where(Video.negocioId == negocio_id)
+    return [video_data(item) for item in db.scalars(query.offset(offset).limit(12))]
+
+
+@app.get('/api/mis-videos')
+def my_videos(user=Depends(current_user), db=Depends(get_db)):
+    query = select(Video).join(Business).where(Business.owner_id == user.id).order_by(Video.id.desc())
+    return [video_data(item) for item in db.scalars(query)]
+
+
+@app.post('/api/videos', status_code=201)
+def create_video(data: VideoIn, user=Depends(current_user), db=Depends(get_db)):
+    owned(db, data.negocioId, user)
+    item = Video(**data.model_dump())
+    db.add(item)
+    db.commit()
+    return video_data(item)
+
+
+def owned_video(db, item_id, user):
+    item = db.get(Video, item_id)
+    if not item:
+        raise HTTPException(404, 'Video no encontrado')
+    owned(db, item.negocioId, user)
+    return item
+
+
+@app.put('/api/videos/{item_id}')
+def update_video(item_id: int, data: VideoIn, user=Depends(current_user), db=Depends(get_db)):
+    item = owned_video(db, item_id, user)
+    owned(db, data.negocioId, user)
+    for key, value in data.model_dump().items():
+        setattr(item, key, value)
+    db.commit()
+    return video_data(item)
+
+
+@app.delete('/api/videos/{item_id}', status_code=204)
+def delete_video(item_id: int, user=Depends(current_user), db=Depends(get_db)):
+    db.delete(owned_video(db, item_id, user))
+    db.commit()
 
 
 # Public images of businesses/products; writes always require authentication.
