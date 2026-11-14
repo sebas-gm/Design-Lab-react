@@ -1,8 +1,18 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useLab } from '../context';
-export default function ProtectedRoute({ children }) {
+import { Navigate, useLocation } from "react-router-dom";
+import { useLab } from "../context";
+export default function ProtectedRoute({ children, business = false }) {
   const { user, ready } = useLab();
   const location = useLocation();
   if (!ready) return <main>Cargando sesión…</main>;
-  return user ? children : <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (!user)
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
+    );
+  if (business && user.tipo_cuenta !== "negocios")
+    return <Navigate to="/activar-negocio" replace />;
+  return children;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LabContext } from "../context";
 import { api } from "../api";
 
@@ -8,37 +8,71 @@ export default function LabProvider({ children }) {
   const [negocios, setNegocios] = useState([]);
   const [productos, setProductos] = useState([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const generation = useRef(0);
+  const userId = user?.id;
 
-  async function refresh() {
-    setLoading(true);
-    try {
-      const [businesses, products] = await Promise.all([
-        api("/negocios"),
-        api("/productos"),
-      ]);
-      setNegocios(businesses);
-      setProductos(products);
+  const changeUser = useCallback((value) => {
+    generation.current++;
+    setUser(value);
+    if (!value) {
+      setNegocios([]);
+      setProductos([]);
       setError("");
-    } catch (e) {
-      setError(e.message);
-    } finally {
       setLoading(false);
     }
-  }
-  useEffect(() => {
-    Promise.resolve().then(refresh);
-    api("/auth/me")
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setReady(true));
   }, []);
+
+  const refresh = useCallback(async () => {
+    const request = ++generation.current;
+    setLoading(true);
+    try {
+      const [businesses, products, account] = await Promise.all([
+        api("/negocios"),
+        api("/productos"),
+        api("/auth/me"),
+      ]);
+      if (request !== generation.current) return;
+      setNegocios(businesses);
+      setProductos(products);
+      setUser(account);
+      setError("");
+    } catch (e) {
+      if (request === generation.current) setError(e.message);
+    } finally {
+      if (request === generation.current) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api("/auth/me")
+      .then((account) => {
+        if (active) changeUser(account);
+      })
+      .catch(() => {
+        if (active) changeUser(null);
+      })
+      .finally(() => {
+        if (active) setReady(true);
+      });
+    const expired = () => changeUser(null);
+    window.addEventListener("designlab:unauthorized", expired);
+    return () => {
+      active = false;
+      window.removeEventListener("designlab:unauthorized", expired);
+    };
+  }, [changeUser]);
+
+  useEffect(() => {
+    if (userId) Promise.resolve().then(refresh);
+  }, [userId, refresh]);
 
   return (
     <LabContext.Provider
       value={{
         user,
-        setUser,
+        setUser: changeUser,
         ready,
         negocios,
         productos,

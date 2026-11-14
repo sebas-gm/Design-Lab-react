@@ -14,7 +14,7 @@ from backend.models import Business, Product, Session, User, Video
 from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn
 from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
-from backend.migrations import migrate_business_details
+from backend.migrations import migrate_business_details, migrate_account_types
 from backend.uploads import UPLOAD_DIR, save_image
 
 engine = make_engine()
@@ -27,6 +27,7 @@ async def lifespan(app):
     # Only creates missing tables. Never drops or replaces existing data.
     Base.metadata.create_all(engine)
     migrate_business_details(engine)
+    migrate_account_types(engine)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
@@ -65,7 +66,13 @@ def current_user(request: Request, db=Depends(get_db)):
 
 
 def public_user(user):
-    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo}
+    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta}
+
+
+def business_user(user=Depends(current_user)):
+    if user.tipo_cuenta != 'negocios':
+        raise HTTPException(403, 'Activa tu cuenta de negocios registrando tu primer negocio')
+    return user
 
 
 def serialize(record):
@@ -73,6 +80,7 @@ def serialize(record):
 
 
 def owned(db, business_id, user):
+    business_user(user)
     business = db.get(Business, business_id)
     if not business:
         raise HTTPException(404, 'Negocio no encontrado')
@@ -139,12 +147,12 @@ def logout(request: Request, response: Response, db=Depends(get_db)):
     response.delete_cookie('designlab_session', path='/')
 
 
-@app.get('/api/negocios')
+@app.get('/api/negocios', dependencies=[Depends(current_user)])
 def businesses(db=Depends(get_db)):
     return [serialize(item) for item in db.scalars(select(Business).order_by(Business.id.desc()))]
 
 
-@app.get('/api/productos')
+@app.get('/api/productos', dependencies=[Depends(current_user)])
 def products(db=Depends(get_db)):
     return [serialize(item) for item in db.scalars(select(Product).order_by(Product.id.desc()))]
 
@@ -153,6 +161,8 @@ def products(db=Depends(get_db)):
 def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
     item = Business(**data.model_dump(), owner_id=user.id)
     db.add(item)
+    # Activation and the first business are saved atomically.
+    user.tipo_cuenta = 'negocios'
     db.commit()
     return serialize(item)
 
@@ -234,6 +244,8 @@ def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_d
         business_id = mapping[old.negocioId]
         if not db.scalar(select(Product).where(Product.negocioId == business_id, Product.legacy_id == str(old.id))):
             db.add(Product(**old.model_dump(exclude={'id', 'negocioId'}), negocioId=business_id, legacy_id=str(old.id)))
+    if mapping:
+        user.tipo_cuenta = 'negocios'
     db.commit()
     return {'message': 'Importación completada. Los datos originales siguen en el navegador.'}
 
@@ -243,7 +255,7 @@ def video_data(item):
     return {**serialize(item), 'plataforma': provider, 'embed_url': embed}
 
 
-@app.get('/api/videos')
+@app.get('/api/videos', dependencies=[Depends(current_user)])
 def list_videos(negocio_id: int | None = None, offset: int = 0, db=Depends(get_db)):
     if offset < 0:
         raise HTTPException(422, 'Página inválida')
@@ -254,7 +266,7 @@ def list_videos(negocio_id: int | None = None, offset: int = 0, db=Depends(get_d
 
 
 @app.get('/api/mis-videos')
-def my_videos(user=Depends(current_user), db=Depends(get_db)):
+def my_videos(user=Depends(business_user), db=Depends(get_db)):
     query = select(Video).join(Business).where(Business.owner_id == user.id).order_by(Video.id.desc())
     return [video_data(item) for item in db.scalars(query)]
 

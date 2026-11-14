@@ -47,7 +47,7 @@ Abre `http://localhost:5173`. Usa este host también para iniciar sesión: Vite 
 ## Uso y conservación de datos
 
 1. Registra una cuenta con contraseña de 12 caracteres como mínimo.
-2. En **Mi panel**, crea negocios, productos y activa promociones. Cada usuario administra exclusivamente sus negocios; cualquier visitante puede consultar el catálogo.
+2. Con una cuenta personal puedes acceder a Inicio, Negocios, Videos y Promociones. Desde **Registrar mi negocio** completas el formulario y activas tu cuenta de negocios al guardarlo. Después podrás administrar negocios, productos, horarios, promociones y videos. Cada propietario administra exclusivamente sus registros; el catálogo requiere iniciar sesión.
 3. Para los registros anteriores, abre el mismo navegador, perfil y origen donde los guardaste. En **Mi panel → Importar mis datos locales**, revisa el conteo y confirma. La importación es transaccional y repetible por cuenta sin duplicados; nunca vacía localStorage. Un producto sin negocio en el lote produce un error y revierte todo el lote. Un JSON inválido se informa sin borrarlo. Los datos locales anteriores no tienen propietario verificable: importa solo tus registros.
 4. El catálogo de ejemplo original se conserva en `src/data`. Puedes importarlo voluntariamente; sus direcciones son pendientes de verificar y no tienen coordenadas inventadas. Los registros de ejemplo importados pertenecen a tu cuenta.
 5. Selecciona las imágenes desde tu PC mediante el selector de archivos. El registro de negocios solicita una foto de fachada; el logo es opcional. Los productos también permiten seleccionar una imagen. Se muestra una vista previa antes de guardar. Se admiten JPG, PNG y WebP de hasta 5 MB y 20 megapíxeles. Las imágenes anteriores por URL siguen funcionando y se conservan al editar si no seleccionas otra foto.
@@ -96,6 +96,18 @@ Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Pa
 
 
 ## Barra lateral y videos
+
+### Cuentas personales y cuentas de negocios
+
+Solo registro e inicio de sesión son vistas públicas. Al entrar sin sesión a una página protegida se abre el login; después se recupera la ruta y sus filtros. Las cuentas nuevas son personales. Inicio, Negocios, Videos y Promociones requieren sesión también en sus endpoints de datos. La expiración de la sesión vuelve a cerrar las vistas privadas y limpia el catálogo en memoria.
+
+**Mi cuenta** muestra nombre, correo y tipo de cuenta. **Registrar mi negocio** abre `/activar-negocio`, explica la activación gratuita y lleva al formulario existente. El primer negocio y `users.tipo_cuenta = 'negocios'` se guardan en la misma transacción. Cancelar o fallar una validación deja la cuenta personal. No se puede elegir un tipo privilegiado durante el registro de usuario. Al activar se habilitan Mi panel, Mi negocio, Mis productos, Mis promociones y Mis videos. Los botones de creación siguen disponibles dentro de esas vistas.
+
+La API exige cuenta de negocios y propiedad para modificar negocios, productos, promociones y videos. Las imágenes se pueden subir con una cuenta personal para completar el primer formulario: subir una imagen no activa la cuenta. Los archivos de imagen siguen teniendo rutas públicas para compatibilidad; las vistas y los datos del catálogo requieren sesión. No existe administrador global.
+
+La migración `migrate_account_types` agrega el campo sin borrar usuarios y convierte en cuentas de negocios a los propietarios existentes. Importar negocios anteriores también activa la cuenta en la misma transacción; una importación vacía o fallida no activa nada. Una cuenta puede conservar varios negocios. Eliminar el último negocio no desactiva la cuenta de negocios.
+
+El arranque de FastAPI y `python -m backend.init_db` aplican esta migración. Respaldo previo: `4e6142c`, etiqueta `respaldo-antes-tipos-cuenta`. La suite incluye registro personal, activación, validación fallida, protección del catálogo, separación de propietarios, migración de cuentas existentes e importación atómica.
 
 La navegación lateral reúne Inicio, Negocios, Videos y Promociones. Al iniciar sesión añade las opciones existentes de administración y **Mis videos**. En móvil se abre con el botón de menú; se cierra al elegir una opción, pulsar Escape o tocar fuera del menú. El buscador superior abre el catálogo con el texto consultado.
 

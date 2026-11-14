@@ -24,6 +24,12 @@ export async function api(path, options = {}) {
   if (response.status === 204) return null;
   const data = await response.json().catch(() => null);
   if (!response.ok) {
+    if (
+      response.status === 401 &&
+      !["/auth/login", "/auth/register"].includes(path)
+    ) {
+      window.dispatchEvent(new Event("designlab:unauthorized"));
+    }
     const detail = data?.detail;
     throw new Error(
       Array.isArray(detail)

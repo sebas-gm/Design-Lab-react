@@ -8,6 +8,7 @@ class User(Base):
     nombre = Column(String(120), nullable=False)
     correo = Column(String(254), unique=True, nullable=False)
     password_hash = Column(String(256), nullable=False)
+    tipo_cuenta = Column(String(16), nullable=False, default='personal', server_default='personal')
 
 
 class Session(Base):

@@ -30,7 +30,7 @@ export default function AuthForm({ register = false }) {
           body,
         }),
       );
-      navigate(location.state?.from || "/dashboard", { replace: true });
+      navigate(location.state?.from || "/", { replace: true });
     } catch (e) {
       setMessage(e.message);
     } finally {
@@ -40,7 +40,7 @@ export default function AuthForm({ register = false }) {
   return (
     <main className="login">
       <h1>{register ? "Crear una cuenta" : "Iniciar sesión"}</h1>
-      <p>Administra tus negocios en Design Lab.</p>
+      <p>Descubre negocios, videos y promociones cerca de TECBA.</p>
       <form onSubmit={submit}>
         {register && (
           <label>
@@ -95,7 +95,7 @@ export default function AuthForm({ register = false }) {
         {message && <p role="alert">{message}</p>}
       </form>
       <p>
-        <Link to={register ? "/login" : "/registro"}>
+        <Link to={register ? "/login" : "/registro"} state={location.state}>
           {register ? "Ya tengo una cuenta" : "Crear una cuenta"}
         </Link>
       </p>

@@ -7,7 +7,7 @@ from sqlalchemy import URL, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.database import Base, make_engine
-from backend.migrations import migrate_business_details
+from backend.migrations import migrate_business_details, migrate_account_types
 import backend.models  # noqa: F401 - register tables before create_all
 
 
@@ -31,6 +31,7 @@ def main():
         engine = make_engine()
         Base.metadata.create_all(engine)
         migrate_business_details(engine)
+        migrate_account_types(engine)
         with engine.connect() as connection:
             connection.execute(text('SELECT 1'))
         engine.dispose()

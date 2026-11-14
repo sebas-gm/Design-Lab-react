@@ -1,6 +1,23 @@
 .videos-page {
   padding: 34px 30px;
 }
+
+.activation-panel {
+  max-width: 760px;
+  padding: 32px;
+}
+.activation-panel ol {
+  padding-left: 22px;
+  color: #6a567c;
+  line-height: 2;
+  margin-block: 20px;
+}
+.activation-back {
+  display: inline-block;
+  margin: 18px;
+  color: #7b6390;
+  font-size: 13px;
+}
 .page-heading {
   display: flex;
   justify-content: space-between;

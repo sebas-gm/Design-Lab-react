@@ -12,9 +12,7 @@ const publicLinks = [
 ];
 const ownerLinks = [
   ["/dashboard", "Mi panel", "grid"],
-  ["/registrar-negocio", "Registrar negocio", "plus"],
-  ["/administrar-negocios", "Mis negocios", "shop"],
-  ["/registrar-producto", "Registrar producto", "plus"],
+  ["/administrar-negocios", "Mi negocio", "shop"],
   ["/administrar-productos", "Mis productos", "grid"],
   ["/administrar-promociones", "Mis promociones", "tag"],
   ["/administrar-videos", "Mis videos", "play"],
@@ -112,7 +110,7 @@ export default function Navbar() {
           />
           <button aria-label="Buscar">⌕</button>
         </form>
-        <Link to={user ? "/dashboard" : "/login"} className="topbar-account">
+        <Link to={user ? "/mi-cuenta" : "/login"} className="topbar-account">
           {user ? user.nombre : "Iniciar sesión"}{" "}
           <span aria-hidden="true">↗</span>
         </Link>
@@ -127,18 +125,22 @@ export default function Navbar() {
       <aside id="sidebar" className={`sidebar ${open ? "is-open" : ""}`}>
         <nav aria-label="Navegación principal">
           <p className="sidebar-label">Descubrir</p>
-          {links(publicLinks)}
+          {user && links(publicLinks)}
           <p className="sidebar-label">
             {user ? "Mi espacio" : "Únete a Design Lab"}
           </p>
           {user ? (
-            links(ownerLinks)
+            <>
+              {links([["/mi-cuenta", "Mi cuenta", "grid"]])}
+              {user.tipo_cuenta === "negocios"
+                ? links(ownerLinks)
+                : links([["/activar-negocio", "Registrar mi negocio", "shop"]])}
+            </>
           ) : (
             <>
               {links([
                 ["/login", "Iniciar sesión", "grid"],
                 ["/registro", "Crear una cuenta", "plus"],
-                ["/registrar-negocio", "Registrar mi negocio", "shop"],
               ])}
             </>
           )}
@@ -149,7 +151,13 @@ export default function Navbar() {
           </span>
           <div>
             <strong>{user?.nombre || "Tu comunidad local"}</strong>
-            <small>{user ? "Cuenta de Design Lab" : "Cerca de TECBA"}</small>
+            <small>
+              {user
+                ? user.tipo_cuenta === "negocios"
+                  ? "Cuenta de negocios"
+                  : "Cuenta personal"
+                : "Cerca de TECBA"}
+            </small>
           </div>
           {user && (
             <button

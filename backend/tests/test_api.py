@@ -147,7 +147,7 @@ def test_additive_migration_preserves_existing_business():
 
 def test_video_permissions_and_links(clients):
     owner, other = clients
-    assert owner.get('/api/videos').json() == []
+    assert owner.get('/api/videos').status_code == 401
     assert owner.post('/api/videos', json={'negocioId': 1, 'titulo': 'Prueba', 'url': 'https://youtu.be/M7lc1UVf-VE'}).status_code == 401
     signup(owner, 'video-owner@example.com')
     signup(other, 'video-other@example.com')
@@ -159,7 +159,7 @@ def test_video_permissions_and_links(clients):
     video = response.json()
     assert video['embed_url'] == 'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE'
     assert other.get('/api/videos').json()[0]['id'] == video['id']
-    assert other.get('/api/mis-videos').json() == []
+    assert other.get('/api/mis-videos').status_code == 403
     assert len(owner.get('/api/mis-videos').json()) == 1
     assert other.put(f"/api/videos/{video['id']}", json=payload).status_code == 403
     assert other.delete(f"/api/videos/{video['id']}").status_code == 403
@@ -192,3 +192,61 @@ def test_video_pagination(clients):
     page_two = owner.get('/api/videos?offset=12').json()
     assert len(page_one) == 12 and len(page_two) == 1
     assert not {v['id'] for v in page_one} & {v['id'] for v in page_two}
+
+
+def test_account_activation_and_members_only_catalog(clients):
+    owner, visitor = clients
+    for path in ['/api/negocios', '/api/productos', '/api/videos', '/api/mis-videos']:
+        assert visitor.get(path).status_code == 401
+    account = signup(owner, 'personal@example.com').json()
+    assert account['tipo_cuenta'] == 'personal'
+    for path in ['/api/negocios', '/api/productos', '/api/videos']:
+        assert owner.get(path).status_code == 200
+    assert owner.get('/api/mis-videos').status_code == 403
+    # Uploading a photo or opening onboarding cannot activate the account.
+    assert owner.post('/api/negocios', json={**BUSINESS, 'nombre': ''}).status_code == 422
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'personal'
+    assert visitor.post('/api/auth/register', json={'nombre': 'Prueba', 'correo': 'role-injection@example.com', 'contrasena': 'Prueba-segura-2026', 'tipo_cuenta': 'negocios'}).status_code == 422
+    created = owner.post('/api/negocios', json=BUSINESS)
+    assert created.status_code == 201
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'negocios'
+    assert owner.get('/api/mis-videos').status_code == 200
+    assert owner.post('/api/negocios', json={**BUSINESS, 'nombre': 'Segundo negocio'}).status_code == 201
+    owner.post('/api/auth/logout')
+    login = owner.post('/api/auth/login', json={'correo': 'personal@example.com', 'contrasena': 'Prueba-segura-2026'})
+    assert login.json()['tipo_cuenta'] == 'negocios'
+    # A different business account still cannot edit someone else's records.
+    signup(visitor, 'another-owner@example.com')
+    visitor.post('/api/negocios', json=BUSINESS)
+    assert visitor.put(f"/api/negocios/{created.json()['id']}", json=BUSINESS).status_code == 403
+
+
+def test_import_activation_is_atomic(clients):
+    owner, _ = clients
+    signup(owner, 'legacy-activation@example.com')
+    assert owner.post('/api/importar', json={'negocios': [], 'productos': []}).status_code == 200
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'personal'
+    business = {**BUSINESS, 'id': 555}
+    bad_product = {'id': 1, 'negocioId': 999, 'nombre': 'Prueba', 'precio': 1, 'descripcion': 'Prueba'}
+    assert owner.post('/api/importar', json={'negocios': [business], 'productos': [bad_product]}).status_code == 422
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'personal'
+    assert owner.get('/api/negocios').json() == []
+    assert owner.post('/api/importar', json={'negocios': [business], 'productos': []}).status_code == 200
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'negocios'
+
+
+def test_migrate_existing_owners_to_business_accounts():
+    from sqlalchemy import create_engine, text
+    from backend.migrations import migrate_account_types
+    isolated = create_engine('sqlite://')
+    with isolated.begin() as db:
+        db.execute(text('CREATE TABLE users (id INTEGER PRIMARY KEY)'))
+        db.execute(text('CREATE TABLE businesses (id INTEGER PRIMARY KEY, owner_id INTEGER)'))
+        db.execute(text('INSERT INTO users VALUES (1), (2)'))
+        db.execute(text('INSERT INTO businesses VALUES (1, 1)'))
+    migrate_account_types(isolated)
+    migrate_account_types(isolated)
+    with isolated.connect() as db:
+        assert list(db.execute(text('SELECT id, tipo_cuenta FROM users ORDER BY id'))) == [(1, 'negocios'), (2, 'personal')]
+        assert db.scalar(text('SELECT COUNT(*) FROM businesses')) == 1
+    isolated.dispose()
