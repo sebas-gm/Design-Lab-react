@@ -1,0 +1,104 @@
+.confirmation-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  border: 1px solid #dfc9ff;
+  border-radius: 24px;
+  background: #fdfaff;
+  color: #2b1c47;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 30px 100px #13052366;
+  isolation: isolate;
+}
+.confirmation-dialog::backdrop {
+  background: #160a2b99;
+  backdrop-filter: blur(6px);
+}
+.confirmation-decoration {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: 145px;
+  background: radial-gradient(ellipse at top, #d4b3ff77, transparent 75%);
+  pointer-events: none;
+}
+.confirmation-brand {
+  display: block;
+  color: #9470bc;
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+.confirmation-icon {
+  display: grid;
+  place-items: center;
+  width: 65px;
+  height: 65px;
+  border-radius: 20px;
+  margin: 22px auto 20px;
+  color: #7a35cf;
+  background: linear-gradient(130deg, #f0e2ff, #dfc7ff);
+  border: 1px solid #d5b2ff;
+  font-size: 33px;
+  font-weight: 700;
+}
+.confirmation-dialog h2 {
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  margin-bottom: 13px;
+}
+.confirmation-dialog p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #806c94;
+  overflow-wrap: anywhere;
+}
+.confirmation-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+.confirmation-buttons button {
+  flex: 1;
+  padding: 13px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 11px;
+}
+.confirmation-no {
+  color: #74528e;
+  background: #f5edf9;
+  border: 1px solid #dfcee9;
+}
+.confirmation-yes {
+  background: linear-gradient(110deg, #6c2bd9, #9151e6);
+  border: 1px solid #8846db;
+  color: white;
+  box-shadow: 0 5px 13px #6c2bd922;
+}
+.confirmation-dialog > small {
+  display: block;
+  margin-top: 20px;
+  color: #a48eb6;
+  font-size: 11px;
+}
+.confirmation-dialog.is-destructive .confirmation-icon {
+  color: #a34166;
+  background: #f7e3ec;
+  border-color: #edc4d6;
+}
+@media (max-width: 400px) {
+  .confirmation-dialog {
+    padding: 26px 20px;
+  }
+  .confirmation-dialog h2 {
+    font-size: 21px;
+  }
+  .confirmation-buttons {
+    flex-direction: column-reverse;
+  }
+}

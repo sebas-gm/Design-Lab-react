@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useLab } from "../context";
 import { api } from "../api";
 import ImagePicker from "../components/ImagePicker";
+import { useConfirm } from "../confirmation";
 import LegacyImport from "../components/LegacyImport";
 import "../styles/profile.css";
 
@@ -52,6 +53,7 @@ function Setting({ icon, title, description, children }) {
 }
 
 export default function MiCuenta() {
+  const confirm = useConfirm();
   const { user, setUser } = useLab();
   const business = user.tipo_cuenta === "negocios";
   const [editing, setEditing] = useState(false);
@@ -64,6 +66,10 @@ export default function MiCuenta() {
   async function saveProfile(event) {
     event.preventDefault();
     const nombre = new FormData(event.currentTarget).get("nombre");
+    if (
+      !(await confirm("Se guardarán el nombre y la foto de tu perfil.", "save"))
+    )
+      return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -110,6 +116,7 @@ export default function MiCuenta() {
   }
 
   async function logout() {
+    if (!(await confirm('Tendrás que iniciar sesión de nuevo para volver a tu cuenta.', 'logout'))) return;
     setBusy(true);
     setError("");
     try {
@@ -150,7 +157,12 @@ export default function MiCuenta() {
           </span>
           <button
             className="avatar-camera"
-            onClick={() => {
+            onClick={async () => {
+              if (
+                !editing &&
+                !(await confirm("Vas a editar tu foto de perfil.", "edit"))
+              )
+                return;
               setEditing(true);
               setError("");
             }}
@@ -171,7 +183,15 @@ export default function MiCuenta() {
           className="edit-profile-button"
           aria-expanded={editing}
           aria-controls="profile-editor"
-          onClick={() => {
+          onClick={async () => {
+            if (
+              !editing &&
+              !(await confirm(
+                "Vas a editar la información de tu perfil.",
+                "edit",
+              ))
+            )
+              return;
             setEditing(!editing);
             setPhoto(null);
             setError("");

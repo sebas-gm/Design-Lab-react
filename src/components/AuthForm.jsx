@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useLab } from "../context";
+import { accountHome } from "../navigation";
 import "../styles/login.css";
 export default function AuthForm({ register = false }) {
   const [message, setMessage] = useState(""),
@@ -24,13 +25,12 @@ export default function AuthForm({ register = false }) {
     };
     if (register) body.nombre = form.get("nombre");
     try {
-      setUser(
-        await api(`/auth/${register ? "register" : "login"}`, {
-          method: "POST",
-          body,
-        }),
-      );
-      navigate(location.state?.from || "/inicio", { replace: true });
+      const account = await api(`/auth/${register ? "register" : "login"}`, {
+        method: "POST",
+        body,
+      });
+      setUser(account);
+      navigate(location.state?.from || accountHome(account), { replace: true });
     } catch (e) {
       setMessage(e.message);
     } finally {

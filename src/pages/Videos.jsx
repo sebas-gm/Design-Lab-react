@@ -3,9 +3,11 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useLab } from "../context";
 import VideoCard from "../components/VideoCard";
+import { useConfirm } from "../confirmation";
 import "../styles/videos.css";
 
 export default function Videos({ manage = false }) {
+  const confirm = useConfirm();
   const { negocios, user } = useLab();
   const mine = negocios.filter((n) => n.owner_id === user?.id);
   const [videos, setVideos] = useState([]);
@@ -48,6 +50,15 @@ export default function Videos({ manage = false }) {
     event.preventDefault();
     const form = event.currentTarget;
     const values = Object.fromEntries(new FormData(form));
+    if (
+      !(await confirm(
+        editing
+          ? "Se guardarán los cambios de este video."
+          : "Se guardará y publicará el enlace de este video.",
+        "save",
+      ))
+    )
+      return;
     values.negocioId = Number(values.negocioId);
     setBusy(true);
     setError("");
@@ -73,9 +84,10 @@ export default function Videos({ manage = false }) {
   }
   async function remove(video) {
     if (
-      !window.confirm(
-        `¿Quitar “${video.titulo}” de Design Lab? El video original seguirá en su plataforma.`,
-      )
+      !(await confirm(
+        `Se quitará “${video.titulo}” de Design Lab. El video original seguirá en su plataforma.`,
+        "delete",
+      ))
     )
       return;
     setBusy(true);
@@ -254,7 +266,14 @@ export default function Videos({ manage = false }) {
               <div className="video-actions">
                 <button
                   disabled={busy}
-                  onClick={() => {
+                  onClick={async () => {
+                    if (
+                      !(await confirm(
+                        `Vas a editar “${video.titulo}”.`,
+                        "edit",
+                      ))
+                    )
+                      return;
                     setEditing(video);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}

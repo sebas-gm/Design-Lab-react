@@ -1,7 +1,8 @@
 import { Navigate } from "react-router-dom";
 import { useLab } from "../context";
+import { accountHome } from "../navigation";
 export default function GuestRoute({ children }) {
   const { user, ready } = useLab();
   if (!ready) return <main>Cargando sesión…</main>;
-  return user ? <Navigate to="/inicio" replace /> : children;
+  return user ? <Navigate to={accountHome(user)} replace /> : children;
 }

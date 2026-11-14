@@ -3,11 +3,14 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import CatalogStatus from "./CatalogStatus";
 import { useLab } from "../context";
+import { isClientView } from "../navigation";
 import "../styles/welcome.css";
 
 export default function AppLayout() {
   const { pathname } = useLocation();
   const { user } = useLab();
+  const workspace =
+    user?.tipo_cuenta === "negocios" && !isClientView(user, pathname);
   if (["/", "/login", "/registro"].includes(pathname)) {
     return (
       <div className="entry-layout">
@@ -16,15 +19,17 @@ export default function AppLayout() {
     );
   }
   return (
-    <>
+    <div
+      className={`app-frame ${workspace ? "workspace-mode" : "explore-mode"}`}
+    >
       <Navbar />
       <div
-        className={`app-content ${user?.tipo_cuenta === "negocios" ? "business-content" : "personal-content"}`}
+        className={`app-content ${workspace ? "business-content" : "personal-content"}`}
       >
         <CatalogStatus />
         <Outlet />
         <Footer />
       </div>
-    </>
+    </div>
   );
 }

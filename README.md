@@ -46,6 +46,10 @@ Abre `http://localhost:5173`. Usa este host también para iniciar sesión: Vite 
 
 ## Uso y conservación de datos
 
+Solo editar, guardar y eliminar solicitan confirmación mediante un modal propio de Design Lab. El fondo se oscurece y el usuario elige **Sí, editar/guardar/eliminar** o **No, cancelar**. Escape cancela; el foco queda dentro del modal y vuelve al control de origen al cerrarlo. Cancelar no envía la operación a la API; las imágenes del formulario se suben después de confirmar el guardado. El guardado incluye registrar un negocio/producto y guardar un enlace de video. Iniciar/cerrar sesión, registrarse como usuario, cambiar preferencias o estados de promoción, importar y cancelar formularios no muestran confirmación. No se utiliza `window.confirm`.
+
+Pruebas de la decisión del modal: `node --test tests/confirmation.test.mjs`. Comprueban cancelación sin cambios, ejecución única al confirmar, bloqueo de solicitudes duplicadas y restricción a las tres acciones admitidas.
+
 1. Registra una cuenta con contraseña de 12 caracteres como mínimo.
 2. Con una cuenta personal puedes acceder a Inicio, Negocios, Videos y Promociones. Desde **Registrar mi negocio** completas el formulario y activas tu cuenta de negocios al guardarlo. Después podrás administrar negocios, productos, horarios, promociones y videos. Cada propietario administra exclusivamente sus registros; el catálogo requiere iniciar sesión.
 3. Para los registros anteriores, abre el mismo navegador, perfil y origen donde los guardaste. En **Mi panel → Importar mis datos locales**, revisa el conteo y confirma. La importación es transaccional y repetible por cuenta sin duplicados; nunca vacía localStorage. Un producto sin negocio en el lote produce un error y revierte todo el lote. Un JSON inválido se informa sin borrarlo. Los datos locales anteriores no tienen propietario verificable: importa solo tus registros.
@@ -109,7 +113,7 @@ Las secciones de configuración se despliegan al pulsarlas. **Preferencias** gua
 
 La dirección principal `/` muestra una bienvenida a pantalla completa, con identidad morada, fotografía urbana ilustrativa y el botón **Iniciar sesión**. No tiene barra lateral, catálogo ni opción de omitir. El enlace secundario permite crear una cuenta. Login y registro comparten el fondo y se presentan fuera de la interfaz interna.
 
-El inicio del catálogo está en `/inicio` y requiere sesión. Después de autenticarse se abre esa ruta o se recupera la página protegida solicitada. Si ya hay una sesión válida, la bienvenida sigue apareciendo en `/` y **Iniciar sesión** permite continuar a `/inicio` sin pedir otra contraseña. Las opciones de la barra lateral mantienen los permisos por cuenta.
+El inicio del catálogo está en `/inicio` y requiere sesión. Después de autenticarse, una cuenta personal entra a `/inicio` y una cuenta de negocios a `/dashboard`, salvo que se recupere una página protegida solicitada. Si ya hay una sesión válida, la bienvenida sigue apareciendo en `/` y **Iniciar sesión** permite continuar al destino de su cuenta sin pedir otra contraseña.
 
 Fondo local: `public/welcome-city.jpg`, fotografía urbana de [Unsplash](https://images.unsplash.com/photo-1486406146926-c627a92ad1ab), ilustrativa y sin relación con una sede específica de TECBA. La capa morada se aplica con CSS. Respaldo previo: `1847fbf`, etiqueta `respaldo-antes-bienvenida`.
 
@@ -129,7 +133,9 @@ La restricción única `uq_business_owner` en MySQL impide crear dos negocios co
 
 El arranque de FastAPI y `python -m backend.init_db` aplican esta migración. Respaldo previo: `4e6142c`, etiqueta `respaldo-antes-tipos-cuenta`. La suite incluye registro personal, activación, validación fallida, protección del catálogo, separación de propietarios, migración de cuentas existentes e importación atómica.
 
-Inicio, Negocios, Videos y Promociones se muestran en la barra superior para ambas cuentas, junto al buscador y el acceso a Mi cuenta. Las cuentas personales no tienen barra lateral y utilizan todo el ancho del contenido; pueden cerrar sesión desde la cabecera y activar su negocio desde Mi cuenta.
+Las cuentas personales tienen Inicio, Negocios, Videos y Promociones en la barra superior, junto al buscador y el acceso a Mi cuenta. No tienen barra lateral y utilizan todo el ancho del contenido; pueden cerrar sesión desde la cabecera y activar su negocio desde Mi cuenta.
+
+Las cuentas de negocios entran por defecto a **Mi panel** después del login. Su cabecera administrativa no muestra las cuatro pestañas ni el buscador del catálogo. **Ver como cliente** abre `/inicio`: muestra las pestañas de exploración, oculta la barra lateral y permite ver el catálogo con la misma cuenta. **Volver a mi panel** recupera las herramientas administrativas. Este modo se deduce de la ruta, funciona al recargar o usar Atrás y no modifica `tipo_cuenta` ni los permisos. Los enlaces directos al catálogo siguen disponibles para propietarios. Respaldo previo: `a41e21a`, etiqueta `respaldo-antes-vista-cliente`.
 
 La barra lateral es exclusiva de las cuentas de negocios: Mi panel, Mi cuenta, Mi negocio, Mis productos, Mis promociones y Mis videos. En móvil se abre con el botón de menú; se cierra al elegir una opción, pulsar Escape o tocar fuera del menú. Las pestañas de exploración permanecen en la cabecera, en una segunda fila desplazable en pantallas pequeñas. El buscador superior abre el catálogo con el texto consultado. Respaldo previo a esta separación: `b480258`, etiqueta `respaldo-antes-topbar-personal`.
 

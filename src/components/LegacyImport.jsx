@@ -52,12 +52,6 @@ export default function LegacyImport() {
       const productos = allProducts.filter(
         (p) => String(p.negocioId) === String(negocio.id),
       );
-      if (
-        !window.confirm(
-          `Se importará “${negocio.nombre}” con ${productos.length} productos. Tu cuenta tendrá un solo negocio. Los datos originales seguirán en el navegador. ¿Continuar?`,
-        )
-      )
-        return;
       const result = await api("/importar", {
         method: "POST",
         body: { negocios: [negocio], productos },

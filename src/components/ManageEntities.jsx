@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useLab } from "../context";
 import EntityForm from "./EntityForm";
+import { useConfirm } from "../confirmation";
 import "../styles/administrarNegocios.css";
 import "../styles/administrarProductos.css";
 import "../styles/administrarPromociones.css";
 export default function ManageEntities({ kind, promotions = false }) {
+  const confirm = useConfirm();
   const { user, negocios, productos, refresh } = useLab();
   const [editing, setEditing] = useState(null),
     [error, setError] = useState(""),
@@ -19,9 +21,10 @@ export default function ManageEntities({ kind, promotions = false }) {
   async function mutate(item, promotion) {
     if (
       !promotion &&
-      !window.confirm(
-        `¿Eliminar ${item.nombre}? Esta acción no se puede deshacer.`,
-      )
+      !(await confirm(
+        `Se eliminará “${item.nombre}”. Esta acción no se puede deshacer.`,
+        "delete",
+      ))
     )
       return;
     setBusy(true);
@@ -92,7 +95,18 @@ export default function ManageEntities({ kind, promotions = false }) {
                   </button>
                 ) : (
                   <>
-                    <button disabled={busy} onClick={() => setEditing(item)}>
+                    <button
+                      disabled={busy}
+                      onClick={async () => {
+                        if (
+                          await confirm(
+                            `Vas a editar “${item.nombre}”.`,
+                            "edit",
+                          )
+                        )
+                          setEditing(item);
+                      }}
+                    >
                       Editar
                     </button>
                     <button disabled={busy} onClick={() => mutate(item, false)}>

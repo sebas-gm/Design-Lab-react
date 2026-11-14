@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../api";
 import { useLab } from "../context";
 import ImagePicker from "./ImagePicker";
+import { useConfirm } from "../confirmation";
 import "../styles/registrarNegocio.css";
 
 async function upload(file) {
@@ -11,6 +12,7 @@ async function upload(file) {
 }
 
 export default function EntityForm({ kind, initial, onSaved, onCancel }) {
+  const confirm = useConfirm();
   const business = kind === "negocios";
   const { negocios, user, refresh } = useLab();
   const mine = negocios.filter((n) => n.owner_id === user.id);
@@ -22,9 +24,14 @@ export default function EntityForm({ kind, initial, onSaved, onCancel }) {
 
   async function submit(event) {
     event.preventDefault();
+    const entity = business ? "negocio" : "producto";
+    const question = initial
+      ? `¿Quieres guardar los cambios de este ${entity}?`
+      : `¿Quieres registrar y publicar este ${entity}?${business && user.tipo_cuenta === "personal" ? " Se activará tu cuenta de negocios." : ""}`;
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    if (!(await confirm(question, "save"))) return;
     setError("");
     setBusy(true);
-    const values = Object.fromEntries(new FormData(event.currentTarget));
     // File controls have no name: only their validated server paths enter the JSON.
     values.imagen = initial?.imagen || "";
     if (business) {

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { useLab } from "../context";
 import { api } from "../api";
+import { useConfirm } from '../confirmation';
+import { accountHome, isClientView } from "../navigation";
 import "../styles/navbar.css";
 
 const publicLinks = [
@@ -46,8 +48,12 @@ function Icon({ name }) {
 }
 
 export default function Navbar() {
+  const confirm = useConfirm();
   const { user, setUser } = useLab();
   const business = user?.tipo_cuenta === "negocios";
+  const { pathname } = useLocation();
+  const clientView = isClientView(user, pathname);
+  const workspace = business && !clientView;
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -60,6 +66,7 @@ export default function Navbar() {
   }, []);
 
   async function logout() {
+    if (!(await confirm('Tendrás que iniciar sesión de nuevo para volver a tu cuenta.', 'logout'))) return;
     try {
       await api("/auth/logout", { method: "POST" });
       setUser(null);
@@ -86,7 +93,7 @@ export default function Navbar() {
   return (
     <>
       <header className="topbar">
-        {business && (
+        {workspace && (
           <button
             className="sidebar-toggle"
             type="button"
@@ -98,50 +105,89 @@ export default function Navbar() {
             ☰
           </button>
         )}
-        <Link to="/" className="brand">
+        <Link to={clientView ? "/inicio" : accountHome(user)} className="brand">
           <span className="brand-symbol">
             D<span>•</span>
           </span>
           <span>
-            Design Lab<small>Descubre lo que está cerca</small>
+            Design Lab
+            <small>
+              {workspace
+                ? "El espacio de tu negocio"
+                : "Descubre lo que está cerca"}
+            </small>
           </span>
         </Link>
-        {user && (
+        {user && clientView && (
           <nav className="topbar-tabs" aria-label="Explorar Design Lab">
             {links(publicLinks)}
           </nav>
         )}
-        <form className="topbar-search" role="search" onSubmit={search}>
-          <input
-            name="q"
-            aria-label="Buscar negocios y productos"
-            placeholder="Busca algo cerca de TECBA…"
-          />
-          <button aria-label="Buscar">⌕</button>
-        </form>
-        <Link to={user ? "/mi-cuenta" : "/login"} className="topbar-account">
-          {user ? user.nombre : "Iniciar sesión"}{" "}
-          <span aria-hidden="true">↗</span>
-        </Link>
-        {user && !business && (
+        {clientView && (
+          <form className="topbar-search" role="search" onSubmit={search}>
+            <input
+              name="q"
+              aria-label="Buscar negocios y productos"
+              placeholder="Busca algo cerca de TECBA…"
+            />
+            <button aria-label="Buscar">⌕</button>
+          </form>
+        )}
+        {business && (
+          <Link
+            className={`view-switch ${workspace ? "from-workspace" : ""}`}
+            to={clientView ? "/dashboard" : "/inicio"}
+            onClick={() => setOpen(false)}
+          >
+            {clientView ? "Volver a mi panel" : "Ver como cliente"}{" "}
+            <span aria-hidden="true">↗</span>
+          </Link>
+        )}
+        {!(business && clientView) && (
+          <Link
+            to={user ? "/mi-cuenta" : "/login"}
+            className="topbar-account"
+            aria-label={user ? `Mi cuenta: ${user.nombre}` : "Iniciar sesión"}
+            title={user?.nombre}
+          >
+            {user && (
+              <span className="topbar-user-avatar" aria-hidden="true">
+                <span>{user.nombre?.[0]?.toUpperCase() || "D"}</span>
+                {user.avatar && (
+                  <img
+                    src={user.avatar}
+                    alt=""
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
+              </span>
+            )}
+            <span className="topbar-user-name">
+              {user ? user.nombre : "Iniciar sesión"}
+            </span>
+          </Link>
+        )}
+        {user && clientView && !business && (
           <button
             className="topbar-logout"
             onClick={logout}
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
           >
-            ↪
+            Cerrar sesión
           </button>
         )}
       </header>
-      {open && business && (
+      {open && workspace && (
         <button
           className="sidebar-backdrop"
           aria-label="Cerrar menú"
           onClick={() => setOpen(false)}
         />
       )}
-      {business && (
+      {workspace && (
         <aside id="sidebar" className={`sidebar ${open ? "is-open" : ""}`}>
           <nav aria-label="Herramientas de tu negocio">
             <p className="sidebar-label">Mi espacio de negocios</p>
@@ -171,14 +217,14 @@ export default function Navbar() {
                 title="Cerrar sesión"
                 aria-label="Cerrar sesión"
               >
-                ↪
+                Cerrar sesión
               </button>
             )}
           </div>
           {error && <p role="alert">{error}</p>}
         </aside>
       )}
-      {!business && error && (
+      {!workspace && error && (
         <p className="navigation-error" role="alert">
           {error}
         </p>

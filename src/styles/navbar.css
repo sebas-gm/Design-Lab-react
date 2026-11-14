@@ -133,6 +133,7 @@
 }
 .sidebar-profile {
   display: flex;
+  flex-wrap: wrap;
   gap: 9px;
   align-items: center;
   padding: 18px 5px 3px;
@@ -142,6 +143,7 @@
 }
 .sidebar-profile > div {
   min-width: 0;
+  flex: 1;
 }
 .sidebar-profile strong {
   display: block;
@@ -170,6 +172,8 @@
   border: 0;
   margin-left: auto;
   padding: 8px;
+  width: 100%;
+  font-size: 12px;
 }
 .app-content {
   margin-left: 230px;
@@ -313,6 +317,9 @@
   background: #ffffff12;
   border: 1px solid #ffffff30;
   padding: 7px 10px;
+  white-space: nowrap;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 .app-content {
   margin-top: var(--app-header-height);
@@ -396,4 +403,76 @@
   .topbar-tabs a svg {
     width: 14px;
   }
+}
+
+.app-frame {
+  width: 100%;
+  min-height: 100vh;
+}
+.workspace-mode {
+  --app-header-height: 78px;
+}
+.workspace-mode .topbar {
+  padding-bottom: 0;
+}
+.view-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #f1e5ff;
+  border: 1px solid #ffffff4d;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.view-switch:hover {
+  background: #ffffff15;
+}
+.view-switch.from-workspace {
+  margin-left: auto;
+}
+@media (max-width: 800px) {
+  .workspace-mode {
+    --app-header-height: 70px;
+  }
+  .view-switch {
+    font-size: 11px;
+    padding: 8px;
+    gap: 4px;
+  }
+}
+@media (max-width: 550px) {
+  .workspace-mode .topbar-account {
+    display: none;
+  }
+  .explore-mode:has(.view-switch) .topbar-account {
+    display: none;
+  }
+  .view-switch span {
+    display: none;
+  }
+}
+
+@media (max-width: 550px) {
+  .topbar { gap: 8px; }
+  .topbar .topbar-account { max-width: 65px; }
+  .topbar-logout { font-size: 11px; padding: 8px; }
+}
+@media (max-width: 400px) {
+  .explore-mode:has(.view-switch) .brand { display: none; }
+}
+
+.topbar-account { display: inline-flex; align-items: center; gap: 9px; }
+.topbar-account span { margin-left: 0; }
+.topbar-user-avatar { position: relative; display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; overflow: hidden; border-radius: 50%; background: #eadbff; color: #6228a1; border: 1px solid #ffffff70; font-size: 14px; font-weight: 700; }
+.topbar-user-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.topbar-user-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 550px) {
+  .topbar .topbar-account { max-width: 110px; gap: 6px; }
+  .topbar-user-avatar { width: 29px; height: 29px; }
+}
+@media (max-width: 400px) {
+  .explore-mode .topbar .brand { font-size: 14px; }
 }
