@@ -9,6 +9,8 @@ class User(Base):
     correo = Column(String(254), unique=True, nullable=False)
     password_hash = Column(String(256), nullable=False)
     tipo_cuenta = Column(String(16), nullable=False, default='personal', server_default='personal')
+    avatar = Column(String(2048), nullable=False, default='', server_default='')
+    reducir_movimiento = Column(Boolean, nullable=False, default=False, server_default='0')
 
 
 class Session(Base):

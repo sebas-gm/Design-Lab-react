@@ -147,7 +147,11 @@ export default function Navbar() {
         </nav>
         <div className="sidebar-profile">
           <span className="profile-avatar">
-            {user?.nombre?.[0]?.toUpperCase() || "D"}
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" />
+            ) : (
+              user?.nombre?.[0]?.toUpperCase() || "D"
+            )}
           </span>
           <div>
             <strong>{user?.nombre || "Tu comunidad local"}</strong>

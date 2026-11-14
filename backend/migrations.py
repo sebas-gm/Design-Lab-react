@@ -37,3 +37,12 @@ def migrate_single_business(engine):
         if duplicate:
             raise RuntimeError('Hay cuentas con varios negocios. No se borró ningún dato. Resuelve estos casos antes de activar la restricción de negocio único.')
         connection.execute(text('CREATE UNIQUE INDEX uq_business_owner ON businesses (owner_id)'))
+
+
+def migrate_profile(engine):
+    existing = {column['name'] for column in inspect(engine).get_columns('users')}
+    with engine.begin() as connection:
+        if 'avatar' not in existing:
+            connection.execute(text("ALTER TABLE users ADD COLUMN avatar VARCHAR(2048) NOT NULL DEFAULT ''"))
+        if 'reducir_movimiento' not in existing:
+            connection.execute(text('ALTER TABLE users ADD COLUMN reducir_movimiento BOOLEAN NOT NULL DEFAULT 0'))

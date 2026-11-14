@@ -111,6 +111,11 @@ def test_image_upload_and_business_details(clients, tmp_path, monkeypatch):
     with Image.open(io.BytesIO(response.content)) as saved:
         assert saved.size == (40, 30)
         assert not saved.getexif()
+    profile = owner.patch('/api/auth/profile', json={'avatar': url, 'nombre': 'Con foto'})
+    assert profile.status_code == 200, profile.text
+    assert profile.json()['avatar'] == url
+    signup(other, 'avatar-other@example.com')
+    assert other.patch('/api/auth/profile', json={'avatar': url}).status_code == 422
     data = {**BUSINESS, 'imagen': url, 'logo': url, 'telefono': '+591 71234567',
             'correo_contacto': 'contact@example.com', 'enlace_mapa': 'https://maps.app.goo.gl/example',
             'hora_apertura': '08:00', 'hora_cierre': '20:00'}
@@ -285,4 +290,41 @@ def test_single_business_migration_never_deletes_duplicates():
         migrate_single_business(isolated)
     with isolated.connect() as db:
         assert db.scalar(text('SELECT COUNT(*) FROM businesses')) == 2
+    isolated.dispose()
+
+
+def test_profile_edits_and_preferences(clients):
+    owner, other = clients
+    assert owner.patch('/api/auth/profile', json={'nombre': 'Nuevo'}).status_code == 401
+    created = signup(owner, 'profile@example.com').json()
+    assert created['avatar'] == ''
+    assert created['reducir_movimiento'] is False
+    updated = owner.patch('/api/auth/profile', json={'nombre': 'Nombre nuevo', 'reducir_movimiento': True})
+    assert updated.status_code == 200
+    assert updated.json()['nombre'] == 'Nombre nuevo'
+    assert updated.json()['reducir_movimiento'] is True
+    assert updated.json()['tipo_cuenta'] == 'personal'
+    assert 'password_hash' not in updated.json()
+    signup(other, 'different-profile@example.com')
+    assert other.get('/api/auth/me').json()['nombre'] == 'Usuario'
+    for invalid in [{'nombre': ''}, {'nombre': None}, {'reducir_movimiento': None}, {'tipo_cuenta': 'negocios'}, {'correo': 'other@example.com'}, {'avatar': 'javascript:alert(1)'}, {'avatar': '/api/uploads/1/../../file.webp'}]:
+        assert owner.patch('/api/auth/profile', json=invalid).status_code == 422
+    owner.post('/api/auth/logout')
+    login = owner.post('/api/auth/login', json={'correo': 'profile@example.com', 'contrasena': 'Prueba-segura-2026'})
+    assert login.json()['nombre'] == 'Nombre nuevo'
+    assert login.json()['reducir_movimiento'] is True
+    assert owner.patch('/api/auth/profile', json={'reducir_movimiento': False}).json()['reducir_movimiento'] is False
+
+
+def test_profile_migration_preserves_users():
+    from sqlalchemy import create_engine, text
+    from backend.migrations import migrate_profile
+    isolated = create_engine('sqlite://')
+    with isolated.begin() as db:
+        db.execute(text('CREATE TABLE users (id INTEGER PRIMARY KEY, nombre VARCHAR(120))'))
+        db.execute(text("INSERT INTO users VALUES (1, 'Anterior')"))
+    migrate_profile(isolated)
+    migrate_profile(isolated)
+    with isolated.connect() as db:
+        assert db.execute(text('SELECT nombre, avatar, reducir_movimiento FROM users')).one() == ('Anterior', '', 0)
     isolated.dispose()

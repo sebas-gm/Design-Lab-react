@@ -11,10 +11,10 @@ from sqlalchemy.exc import IntegrityError
 
 from backend.database import Base, get_db, make_engine
 from backend.models import Business, Product, Session, User, Video
-from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn
+from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn, ProfileUpdate
 from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
-from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business
+from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile
 from backend.uploads import UPLOAD_DIR, save_image
 
 engine = make_engine()
@@ -29,6 +29,7 @@ async def lifespan(app):
     migrate_business_details(engine)
     migrate_account_types(engine)
     migrate_single_business(engine)
+    migrate_profile(engine)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
@@ -67,7 +68,7 @@ def current_user(request: Request, db=Depends(get_db)):
 
 
 def public_user(user):
-    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta}
+    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta, 'avatar': user.avatar, 'reducir_movimiento': user.reducir_movimiento}
 
 
 def business_user(user=Depends(current_user)):
@@ -146,6 +147,20 @@ def logout(request: Request, response: Response, db=Depends(get_db)):
         db.delete(session)
         db.commit()
     response.delete_cookie('designlab_session', path='/')
+
+
+@app.patch('/api/auth/profile')
+def update_profile(data: ProfileUpdate, user=Depends(current_user), db=Depends(get_db)):
+    values = data.model_dump(exclude_unset=True)
+    avatar = values.get('avatar')
+    if avatar:
+        from backend import uploads
+        if not avatar.startswith(f'/api/uploads/{user.id}/') or not (uploads.UPLOAD_DIR / str(user.id) / avatar.rsplit('/', 1)[1]).is_file():
+            raise HTTPException(422, 'Selecciona una foto subida desde tu cuenta')
+    for key, value in values.items():
+        setattr(user, key, value)
+    db.commit()
+    return public_user(user)
 
 
 @app.get('/api/negocios', dependencies=[Depends(current_user)])

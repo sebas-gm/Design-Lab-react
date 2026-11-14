@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
 	correo VARCHAR(254) NOT NULL,
 	password_hash VARCHAR(256) NOT NULL,
 	tipo_cuenta VARCHAR(16) NOT NULL DEFAULT 'personal',
+	avatar VARCHAR(2048) NOT NULL DEFAULT '',
+	reducir_movimiento BOOL NOT NULL DEFAULT '0',
 	PRIMARY KEY (id),
 	UNIQUE (correo)
 );

@@ -97,6 +97,14 @@ Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Pa
 
 ## Barra lateral y videos
 
+### Mi cuenta y perfil
+
+La vista `/mi-cuenta` presenta una tarjeta con nombre, correo, avatar y tipo de cuenta. **Editar perfil** permite cambiar el nombre y seleccionar una foto local con el mismo validador JPG/PNG/WebP de hasta 5 MB. La foto se guarda en `backend/uploads/` y su ruta en `users.avatar`. La edición de correo no está incluida; se muestra como dato de identificación de la cuenta. El avatar también se muestra en la barra lateral.
+
+Las secciones de configuración se despliegan al pulsarlas. **Preferencias** guarda la reducción de animaciones en `users.reducir_movimiento` y la aplica a toda la interfaz. **Privacidad** explica qué datos de cuenta y de negocio se muestran. **Seguridad** informa sobre la sesión y permite cerrarla. **Cuenta de negocios** lleva a activar o administrar el único negocio de la cuenta. La importación de datos anteriores sigue disponible en una sección desplegable.
+
+`PATCH /api/auth/profile` actualiza exclusivamente el perfil de la sesión actual. No admite cambiar correo, contraseña, identificador ni tipo de cuenta. Las fotos deben ser archivos ya subidos por ese usuario. La migración `migrate_profile` añade los campos sin borrar datos; se ejecuta al iniciar FastAPI o mediante `python -m backend.init_db`. Respaldo previo: `2898a30`, etiqueta `respaldo-antes-perfil`.
+
 ### Pantalla de bienvenida
 
 La dirección principal `/` muestra una bienvenida a pantalla completa, con identidad morada, fotografía urbana ilustrativa y el botón **Iniciar sesión**. No tiene barra lateral, catálogo ni opción de omitir. El enlace secundario permite crear una cuenta. Login y registro comparten el fondo y se presentan fuera de la interfaz interna.

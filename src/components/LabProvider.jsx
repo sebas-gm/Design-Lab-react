@@ -15,6 +15,7 @@ export default function LabProvider({ children }) {
   const changeUser = useCallback((value) => {
     generation.current++;
     setUser(value);
+    setLoading(false);
     if (!value) {
       setNegocios([]);
       setProductos([]);
@@ -67,6 +68,14 @@ export default function LabProvider({ children }) {
   useEffect(() => {
     if (userId) Promise.resolve().then(refresh);
   }, [userId, refresh]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "reduce-motion",
+      Boolean(user?.reducir_movimiento),
+    );
+    return () => document.documentElement.classList.remove("reduce-motion");
+  }, [user?.reducir_movimiento]);
 
   return (
     <LabContext.Provider

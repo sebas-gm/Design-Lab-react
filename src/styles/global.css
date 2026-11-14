@@ -10,6 +10,13 @@ body {
   color: #2d2438;
 }
 
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
 #root { min-height: 100vh; display: flex; flex-direction: column; }
 main { flex: 1; width: 100%; }
 main:not(.login):not(.registro):not(.registrar-negocio) { max-width: 1400px; margin-inline: auto; }

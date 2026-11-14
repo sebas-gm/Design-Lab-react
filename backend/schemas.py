@@ -19,6 +19,12 @@ class Login(Input):
     contrasena: str = Field(min_length=1, max_length=128)
 
 
+class ProfileUpdate(Input):
+    nombre: str = Field(default=None, min_length=2, max_length=120)
+    avatar: str = Field(default=None, max_length=2048, pattern=r'^/api/uploads/\d+/[a-f0-9]{32}\.webp$|^$')
+    reducir_movimiento: bool = None
+
+
 class BusinessIn(Input):
     nombre: str = Field(min_length=1, max_length=120)
     categoria: Literal['Comida', 'Librería', 'Tienda', 'Servicios', 'Otros']
