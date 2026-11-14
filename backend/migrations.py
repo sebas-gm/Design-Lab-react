@@ -25,3 +25,15 @@ def migrate_account_types(engine):
         if 'tipo_cuenta' not in existing:
             connection.execute(text("ALTER TABLE users ADD COLUMN tipo_cuenta VARCHAR(16) NOT NULL DEFAULT 'personal'"))
         connection.execute(text("UPDATE users SET tipo_cuenta = 'negocios' WHERE tipo_cuenta = 'personal' AND id IN (SELECT owner_id FROM businesses)"))
+
+
+def migrate_single_business(engine):
+    inspector = inspect(engine)
+    unique = inspector.get_unique_constraints('businesses') + inspector.get_indexes('businesses')
+    if any(item.get('column_names') == ['owner_id'] and item.get('unique', True) for item in unique):
+        return
+    with engine.begin() as connection:
+        duplicate = connection.execute(text('SELECT owner_id FROM businesses GROUP BY owner_id HAVING COUNT(*) > 1 LIMIT 1')).first()
+        if duplicate:
+            raise RuntimeError('Hay cuentas con varios negocios. No se borró ningún dato. Resuelve estos casos antes de activar la restricción de negocio único.')
+        connection.execute(text('CREATE UNIQUE INDEX uq_business_owner ON businesses (owner_id)'))

@@ -1,9 +1,12 @@
 import LegacyImport from "../components/LegacyImport";
+import { useLab } from "../context";
 
 import { Link } from "react-router-dom";
 import "../styles/dashboard.css";
 
 function Dashboard() {
+  const { negocios, user } = useLab();
+  const hasBusiness = negocios.some((n) => n.owner_id === user.id);
   return (
     <main className="dashboard">
       <h1>Panel de administración</h1>
@@ -21,14 +24,16 @@ function Dashboard() {
 
         <div className="dashboard-card">
           <h2>Mi negocio</h2>
-          <p>Registra y administra la información de tus negocios.</p>
+          <p>Administra la información de tu único negocio.</p>
 
-          <Link to="/registrar-negocio">
-            <button>Registrar negocio</button>
-          </Link>
+          {!hasBusiness && (
+            <Link to="/registrar-negocio">
+              <button>Registrar negocio</button>
+            </Link>
+          )}
 
           <Link to="/administrar-negocios">
-            <button>Administrar negocios</button>
+            <button>Administrar mi negocio</button>
           </Link>
         </div>
 

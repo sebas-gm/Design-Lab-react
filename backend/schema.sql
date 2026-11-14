@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS businesses (
 	logo VARCHAR(2048) NOT NULL DEFAULT '',
 	PRIMARY KEY (id),
 	UNIQUE (owner_id, legacy_id),
+	CONSTRAINT uq_business_owner UNIQUE (owner_id),
 	FOREIGN KEY(owner_id) REFERENCES users (id)
 );
 

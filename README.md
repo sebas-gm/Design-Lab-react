@@ -105,7 +105,11 @@ Solo registro e inicio de sesión son vistas públicas. Al entrar sin sesión a 
 
 La API exige cuenta de negocios y propiedad para modificar negocios, productos, promociones y videos. Las imágenes se pueden subir con una cuenta personal para completar el primer formulario: subir una imagen no activa la cuenta. Los archivos de imagen siguen teniendo rutas públicas para compatibilidad; las vistas y los datos del catálogo requieren sesión. No existe administrador global.
 
-La migración `migrate_account_types` agrega el campo sin borrar usuarios y convierte en cuentas de negocios a los propietarios existentes. Importar negocios anteriores también activa la cuenta en la misma transacción; una importación vacía o fallida no activa nada. Una cuenta puede conservar varios negocios. Eliminar el último negocio no desactiva la cuenta de negocios.
+La migración `migrate_account_types` agrega el campo sin borrar usuarios y convierte en cuentas de negocios a los propietarios existentes. Importar un negocio anterior también activa la cuenta en la misma transacción; una importación vacía o fallida no activa nada. Cada cuenta puede tener un solo negocio. Eliminar el negocio no desactiva la cuenta de negocios.
+
+La restricción única `uq_business_owner` en MySQL impide crear dos negocios con el mismo propietario, incluso con solicitudes simultáneas. La API devuelve 409 cuando la cuenta ya tiene uno y permite seguir editándolo. La importación permite seleccionar un solo negocio y sus productos; repetir el mismo lote sigue siendo válido, pero importar otro negocio se rechaza. Los datos originales del navegador se conservan.
+
+`migrate_single_business` añade la restricción a instalaciones existentes. Si encuentra cuentas con varios negocios, se detiene con un mensaje sin borrar ni fusionar registros: esos casos requieren decidir cómo conservarlos antes de continuar. Respaldo anterior: `3db7fa8`, etiqueta `respaldo-antes-negocio-unico`.
 
 El arranque de FastAPI y `python -m backend.init_db` aplican esta migración. Respaldo previo: `4e6142c`, etiqueta `respaldo-antes-tipos-cuenta`. La suite incluye registro personal, activación, validación fallida, protección del catálogo, separación de propietarios, migración de cuentas existentes e importación atómica.
 

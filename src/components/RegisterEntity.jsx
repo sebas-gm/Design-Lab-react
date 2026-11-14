@@ -1,9 +1,20 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import EntityForm from "./EntityForm";
 import { useLab } from "../context";
 export default function RegisterEntity({ kind }) {
   const navigate = useNavigate();
-  const { user } = useLab();
+  const { user, negocios, loading, error, refresh } = useLab();
+  if (kind === "negocios" && loading)
+    return <main className="registrar-negocio">Comprobando tu negocio…</main>;
+  if (kind === "negocios" && error)
+    return (
+      <main className="registrar-negocio">
+        <p role="alert">{error}</p>
+        <button onClick={refresh}>Reintentar</button>
+      </main>
+    );
+  if (kind === "negocios" && negocios.some((n) => n.owner_id === user.id))
+    return <Navigate to="/administrar-negocios" replace />;
   return (
     <main className="registrar-negocio">
       <h1>Registrar {kind === "negocios" ? "negocio" : "producto"}</h1>

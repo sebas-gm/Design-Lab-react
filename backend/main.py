@@ -14,7 +14,7 @@ from backend.models import Business, Product, Session, User, Video
 from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn
 from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
-from backend.migrations import migrate_business_details, migrate_account_types
+from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business
 from backend.uploads import UPLOAD_DIR, save_image
 
 engine = make_engine()
@@ -28,6 +28,7 @@ async def lifespan(app):
     Base.metadata.create_all(engine)
     migrate_business_details(engine)
     migrate_account_types(engine)
+    migrate_single_business(engine)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
@@ -159,11 +160,18 @@ def products(db=Depends(get_db)):
 
 @app.post('/api/negocios', status_code=201)
 def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
+    db.scalar(select(User).where(User.id == user.id).with_for_update())
+    if db.scalar(select(Business.id).where(Business.owner_id == user.id).with_for_update()):
+        raise HTTPException(409, 'Tu cuenta ya tiene un negocio. Puedes editarlo desde Mi negocio.')
     item = Business(**data.model_dump(), owner_id=user.id)
     db.add(item)
     # Activation and the first business are saved atomically.
     user.tipo_cuenta = 'negocios'
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, 'Tu cuenta ya tiene un negocio. Puedes editarlo desde Mi negocio.')
     return serialize(item)
 
 
@@ -230,6 +238,12 @@ def delete_product(item_id: int, user=Depends(current_user), db=Depends(get_db))
 
 @app.post('/api/importar')
 def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_db)):
+    if len(data.negocios) > 1:
+        raise HTTPException(422, 'Cada cuenta solo puede tener un negocio. Selecciona uno para importar; los demás se conservarán en el navegador.')
+    db.scalar(select(User).where(User.id == user.id).with_for_update())
+    existing = db.scalar(select(Business).where(Business.owner_id == user.id).with_for_update())
+    if data.negocios and existing and existing.legacy_id != str(data.negocios[0].id):
+        raise HTTPException(409, 'Tu cuenta ya tiene un negocio. No se importará otro ni se reemplazará el actual.')
     mapping = {}
     for old in data.negocios:
         item = db.scalar(select(Business).where(Business.owner_id == user.id, Business.legacy_id == str(old.id)))

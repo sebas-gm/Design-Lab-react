@@ -42,11 +42,21 @@ export default function ManageEntities({ kind, promotions = false }) {
     <main className={`administrar-${promotions ? "promociones" : kind}`}>
       <h1>Administrar {promotions ? "promociones" : kind}</h1>
       <p>Administra los registros que pertenecen a tu cuenta.</p>
-      <Link
-        to={kind === "negocios" ? "/registrar-negocio" : "/registrar-producto"}
-      >
-        Agregar {kind === "negocios" ? "negocio" : "producto"}
-      </Link>
+      {(kind !== "negocios" || !mine.length) && (
+        <Link
+          to={
+            kind === "negocios" ? "/registrar-negocio" : "/registrar-producto"
+          }
+        >
+          Agregar {kind === "negocios" ? "negocio" : "producto"}
+        </Link>
+      )}
+      {kind === "negocios" && mine.length > 0 && (
+        <p>
+          Tu cuenta puede tener un solo negocio. Aquí puedes actualizar su
+          información.
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
       {!items.length && <p>Aún no tienes registros.</p>}
       <div className="lista-negocios">

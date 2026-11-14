@@ -36,7 +36,7 @@ class Business(Base):
     hora_apertura = Column(String(5), nullable=False, default='', server_default='')
     hora_cierre = Column(String(5), nullable=False, default='', server_default='')
     logo = Column(String(2048), nullable=False, default='', server_default='')
-    __table_args__ = (UniqueConstraint('owner_id', 'legacy_id'),)
+    __table_args__ = (UniqueConstraint('owner_id', 'legacy_id'), UniqueConstraint('owner_id', name='uq_business_owner'))
 
 
 class Product(Base):

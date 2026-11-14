@@ -85,7 +85,7 @@ def test_import_is_idempotent_and_atomic(clients):
     assert len(owner.get('/api/negocios').json()) == 1
     assert len(owner.get('/api/productos').json()) == 1
     bad = {'negocios': [{**BUSINESS, 'id': 999}], 'productos': [{**payload['productos'][0], 'negocioId': 111}]}
-    assert owner.post('/api/importar', json=bad).status_code == 422
+    assert owner.post('/api/importar', json=bad).status_code == 409
     assert len(owner.get('/api/negocios').json()) == 1
 
 
@@ -211,7 +211,7 @@ def test_account_activation_and_members_only_catalog(clients):
     assert created.status_code == 201
     assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'negocios'
     assert owner.get('/api/mis-videos').status_code == 200
-    assert owner.post('/api/negocios', json={**BUSINESS, 'nombre': 'Segundo negocio'}).status_code == 201
+    assert owner.post('/api/negocios', json={**BUSINESS, 'nombre': 'Segundo negocio'}).status_code == 409
     owner.post('/api/auth/logout')
     login = owner.post('/api/auth/login', json={'correo': 'personal@example.com', 'contrasena': 'Prueba-segura-2026'})
     assert login.json()['tipo_cuenta'] == 'negocios'
@@ -249,4 +249,40 @@ def test_migrate_existing_owners_to_business_accounts():
     with isolated.connect() as db:
         assert list(db.execute(text('SELECT id, tipo_cuenta FROM users ORDER BY id'))) == [(1, 'negocios'), (2, 'personal')]
         assert db.scalar(text('SELECT COUNT(*) FROM businesses')) == 1
+    isolated.dispose()
+
+
+def test_single_business_import_and_database_constraint(clients):
+    from sqlalchemy.exc import IntegrityError
+    from sqlalchemy.orm import Session
+    from backend.models import Business
+    owner, _ = clients
+    signup(owner, 'single@example.com')
+    payload = {'negocios': [{**BUSINESS, 'id': 1}, {**BUSINESS, 'id': 2}], 'productos': []}
+    assert owner.post('/api/importar', json=payload).status_code == 422
+    assert owner.get('/api/negocios').json() == []
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'personal'
+    first = owner.post('/api/negocios', json=BUSINESS).json()
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 409
+    assert owner.post('/api/importar', json={'negocios': [payload['negocios'][0]], 'productos': []}).status_code == 409
+    assert len(owner.get('/api/negocios').json()) == 1
+    with Session(engine) as db:
+        db.add(Business(**BUSINESS, owner_id=first['owner_id']))
+        with pytest.raises(IntegrityError):
+            db.commit()
+        db.rollback()
+    assert owner.put(f"/api/negocios/{first['id']}", json={**BUSINESS, 'nombre': 'Editado'}).status_code == 200
+
+
+def test_single_business_migration_never_deletes_duplicates():
+    from sqlalchemy import create_engine, text
+    from backend.migrations import migrate_single_business
+    isolated = create_engine('sqlite://')
+    with isolated.begin() as db:
+        db.execute(text('CREATE TABLE businesses (id INTEGER PRIMARY KEY, owner_id INTEGER NOT NULL)'))
+        db.execute(text('INSERT INTO businesses VALUES (1, 7), (2, 7)'))
+    with pytest.raises(RuntimeError):
+        migrate_single_business(isolated)
+    with isolated.connect() as db:
+        assert db.scalar(text('SELECT COUNT(*) FROM businesses')) == 2
     isolated.dispose()
