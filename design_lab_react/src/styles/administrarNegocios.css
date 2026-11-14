@@ -1,0 +1,122 @@
+
+.administrar-negocios {
+  padding: 40px;
+}
+
+.administrar-negocios h1 {
+  margin-bottom: 10px;
+}
+
+.administrar-negocios > p {
+  margin-bottom: 25px;
+}
+
+.lista-negocios {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 25px;
+}
+
+.negocio-admin {
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.negocio-admin h3 {
+  margin-bottom: 12px;
+}
+
+.negocio-admin p {
+  margin-bottom: 10px;
+}
+
+.administrar-negocios button,
+.btn-agregar-negocio {
+  display: inline-block;
+  background-color: #6c2bd9;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-right: 10px;
+  margin-top: 10px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.administrar-negocios button:hover,
+.btn-agregar-negocio:hover {
+  background-color: #4c1d95;
+}
+
+.administrar-negocios .btn-eliminar {
+  background-color: #dc3545;
+}
+
+.administrar-negocios .btn-cancelar {
+  background-color: #777;
+}
+
+.form-editar-negocio {
+  max-width: 500px;
+  background-color: white;
+  padding: 25px;
+  margin-top: 30px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-editar-negocio input,
+.form-editar-negocio select,
+.form-editar-negocio textarea {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: inherit;
+}
+
+@media (max-width: 900px) {
+  .lista-negocios {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .lista-negocios {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.imagen-negocio-admin {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.formulario-edicion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formulario-edicion input,
+.formulario-edicion select,
+.formulario-edicion textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.formulario-edicion label {
+  font-weight: bold;
+}

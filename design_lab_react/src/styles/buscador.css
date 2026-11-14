@@ -1,0 +1,18 @@
+
+.buscador {
+  margin-top: 25px;
+}
+
+.buscador input {
+  width: 100%;
+  max-width: 500px;
+  padding: 14px 18px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+}
+
+.buscador input:focus {
+  border-color: #6c2bd9;
+}

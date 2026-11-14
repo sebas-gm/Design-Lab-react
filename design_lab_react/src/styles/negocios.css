@@ -1,0 +1,45 @@
+
+.pagina-negocios {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 35px 25px;
+}
+
+.pagina-negocios h1 {
+  color: #2d2438;
+  margin-bottom: 10px;
+}
+
+.pagina-negocios > p {
+  margin-bottom: 25px;
+}
+
+.pagina-negocios .contenedor-negocios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 25px;
+  margin-top: 25px;
+}
+
+.pagina-negocios select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+@media (max-width: 900px) {
+  .pagina-negocios .contenedor-negocios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .pagina-negocios {
+    padding: 20px 15px;
+  }
+
+  .pagina-negocios .contenedor-negocios {
+    grid-template-columns: 1fr;
+  }
+}

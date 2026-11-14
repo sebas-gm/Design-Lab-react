@@ -1,0 +1,43 @@
+
+.home h2 {
+  margin-top: 35px;
+  margin-bottom: 20px;
+  color: #2d2438;
+}
+
+.home .contenedor-negocios {
+  margin-bottom: 30px;
+}
+
+.home > p {
+  margin-bottom: 15px;
+}
+
+
+.home {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 25px;
+}
+
+.home .contenedor-negocios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 25px;
+}
+
+@media (max-width: 900px) {
+  .home .contenedor-negocios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .home {
+    padding: 20px 15px;
+  }
+
+  .home .contenedor-negocios {
+    grid-template-columns: 1fr;
+  }
+}
