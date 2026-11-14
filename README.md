@@ -38,7 +38,6 @@ El inicio crea únicamente tablas ausentes: no borra ni reemplaza datos. `backen
 En otra terminal:
 
 ```powershell
-cd design_lab_react
 npm.cmd ci
 npm.cmd run dev
 ```
@@ -52,7 +51,7 @@ Abre `http://localhost:5173`. Usa este host también para iniciar sesión: Vite 
 3. Para los registros anteriores, abre el mismo navegador, perfil y origen donde los guardaste. En **Mi panel → Importar mis datos locales**, revisa el conteo y confirma. La importación es transaccional y repetible por cuenta sin duplicados; nunca vacía localStorage. Un producto sin negocio en el lote produce un error y revierte todo el lote. Un JSON inválido se informa sin borrarlo. Los datos locales anteriores no tienen propietario verificable: importa solo tus registros.
 4. El catálogo de ejemplo original se conserva en `src/data`. Puedes importarlo voluntariamente; sus direcciones son pendientes de verificar y no tienen coordenadas inventadas. Los registros de ejemplo importados pertenecen a tu cuenta.
 5. Introduce URLs HTTP/HTTPS para las imágenes. Los productos sin imagen muestran una ilustración local. No hay carga de archivos al servidor.
-6. Registra latitud y longitud juntas para mostrar el mapa OpenStreetMap del negocio. Para la referencia configurable de TECBA, copia `design_lab_react/.env.example` a `design_lab_react/.env`, completa `VITE_TECBA_NAME`, `VITE_TECBA_LATITUDE` y `VITE_TECBA_LONGITUDE` y reinicia Vite. Se muestra en el catálogo. La sede exacta sigue pendiente; no se calculan distancias ni se afirma que una ubicación esté verificada. El mapa y las fotografías externas necesitan Internet.
+6. Registra latitud y longitud juntas para mostrar el mapa OpenStreetMap del negocio. Para la referencia configurable de TECBA, copia `.env.example` a `.env`, completa `VITE_TECBA_NAME`, `VITE_TECBA_LATITUDE` y `VITE_TECBA_LONGITUDE` y reinicia Vite. Se muestra en el catálogo. La sede exacta sigue pendiente; no se calculan distancias ni se afirma que una ubicación esté verificada. El mapa y las fotografías externas necesitan Internet.
 
 Eliminar un negocio con productos está bloqueado para evitar borrar productos en cascada. El usuario debe eliminar primero cada producto y confirmar las acciones.
 
@@ -67,7 +66,6 @@ Para producción usa HTTPS, `COOKIE_SECURE=true`, limita intentos de acceso en e
 ```powershell
 # Desde Proyecto React: SQLite en memoria, sin tocar MySQL
 .\.venv\Scripts\python -m pytest backend/tests -q -p no:cacheprovider
-cd design_lab_react
 npm.cmd run lint
 npm.cmd run build
 ```
@@ -81,9 +79,16 @@ También se verificó un recorrido HTTP real por `Vite → /api → FastAPI` con
 Relaciones: `users` 1:N `businesses`, `businesses` 1:N `products`, `users` 1:N `sessions`. La promoción se conserva como estado booleano `products.promocion`, igual que en la aplicación original: activa/desactiva el destacado del producto, sin fechas ni precios promocionales separados. Propietarios y permisos se resuelven mediante `businesses.owner_id`. Los identificadores de importación tienen restricciones únicas por propietario/negocio. Los precios usan DECIMAL(10,2) y las ubicaciones DECIMAL(10,7).
 
 - `backend/main.py`: API y permisos; `models.py`: tablas; `schemas.py`: validaciones; `security.py`: contraseñas y sesiones; `database.py`: configuración.
-- `design_lab_react/src/api.js`, `context.js`, `components/LabProvider.jsx`: conexión y estado compartido.
+- `src/api.js`, `context.js`, `components/LabProvider.jsx`: conexión y estado compartido.
 - `components/EntityForm.jsx`, `ManageEntities.jsx`, `AuthForm.jsx`: formularios reutilizables; páginas existentes conservan sus rutas.
 - `components/LegacyImport.jsx`: importación voluntaria; `LocationMap.jsx`: mapa.
 - `backend/tests/test_api.py`: pruebas aisladas.
 
 Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Para inspeccionarlo sin modificar tu trabajo usa `git show respaldo-inicial:ruta/del/archivo` o crea otra carpeta con `git worktree add ../design-lab-respaldo respaldo-inicial`. No uses `git reset --hard` para consultarlo.
+
+
+## Carpeta unificada
+
+React se ejecuta directamente desde `Proyecto React`: `src/`, `public/`, `package.json` y `vite.config.js` están en la raíz. FastAPI permanece en `backend/`. Ejecuta `npm.cmd run dev` en la raíz e inicia FastAPI en otra terminal situada en esa misma carpeta.
+
+Respaldo anterior al traslado: commit `6685ab8`, etiqueta `respaldo-antes-unificar`. Los archivos Node que antes estaban en la raíz y el README/gitignore anterior del frontend se conservan en `.reorganization-backup/`, excluida de Git. La configuración de MySQL sigue en `backend/.env`.
