@@ -33,7 +33,7 @@ Instalación local verificada el 14 de noviembre de 2026: `design_lab_db` creada
 .\.venv\Scripts\python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-El inicio crea únicamente tablas ausentes: no borra ni reemplaza datos. `backend/schema.sql` contiene el esquema equivalente para revisión o instalación manual en la base elegida. No contiene instrucciones DROP. Las modificaciones futuras del esquema existente requerirán una migración explícita: `create_all` no modifica tablas existentes.
+El inicio crea tablas ausentes y aplica la migración aditiva de `backend/migrations.py` para contacto, horario y logo: solo agrega las columnas que falten, sin borrar datos. `backend/schema.sql` contiene el esquema completo para instalaciones nuevas. No contiene instrucciones DROP. `create_all` por sí solo no modifica tablas existentes.
 
 En otra terminal:
 
@@ -50,12 +50,20 @@ Abre `http://localhost:5173`. Usa este host también para iniciar sesión: Vite 
 2. En **Mi panel**, crea negocios, productos y activa promociones. Cada usuario administra exclusivamente sus negocios; cualquier visitante puede consultar el catálogo.
 3. Para los registros anteriores, abre el mismo navegador, perfil y origen donde los guardaste. En **Mi panel → Importar mis datos locales**, revisa el conteo y confirma. La importación es transaccional y repetible por cuenta sin duplicados; nunca vacía localStorage. Un producto sin negocio en el lote produce un error y revierte todo el lote. Un JSON inválido se informa sin borrarlo. Los datos locales anteriores no tienen propietario verificable: importa solo tus registros.
 4. El catálogo de ejemplo original se conserva en `src/data`. Puedes importarlo voluntariamente; sus direcciones son pendientes de verificar y no tienen coordenadas inventadas. Los registros de ejemplo importados pertenecen a tu cuenta.
-5. Introduce URLs HTTP/HTTPS para las imágenes. Los productos sin imagen muestran una ilustración local. No hay carga de archivos al servidor.
+5. Selecciona las imágenes desde tu PC mediante el selector de archivos. El registro de negocios solicita una foto de fachada; el logo es opcional. Los productos también permiten seleccionar una imagen. Se muestra una vista previa antes de guardar. Se admiten JPG, PNG y WebP de hasta 5 MB y 20 megapíxeles. Las imágenes anteriores por URL siguen funcionando y se conservan al editar si no seleccionas otra foto.
 6. Registra latitud y longitud juntas para mostrar el mapa OpenStreetMap del negocio. Para la referencia configurable de TECBA, copia `.env.example` a `.env`, completa `VITE_TECBA_NAME`, `VITE_TECBA_LATITUDE` y `VITE_TECBA_LONGITUDE` y reinicia Vite. Se muestra en el catálogo. La sede exacta sigue pendiente; no se calculan distancias ni se afirma que una ubicación esté verificada. El mapa y las fotografías externas necesitan Internet.
 
 Eliminar un negocio con productos está bloqueado para evitar borrar productos en cascada. El usuario debe eliminar primero cada producto y confirmar las acciones.
 
-## Autenticación
+## Imágenes y formulario de negocios
+
+El formulario organiza datos principales, horario y fotos. Teléfono, correo, dirección y descripción se muestran en el detalle público del negocio, junto con su logo y enlace de mapa. El horario permite cierres posteriores a medianoche. Los campos nuevos son opcionales en la API para mantener compatibilidad con los registros/importaciones anteriores.
+
+`POST /api/imagenes` requiere sesión y recibe un archivo multipart. El servidor verifica el contenido real, limita tamaño y resolución, lo convierte a WebP y elimina metadatos EXIF. Se guardan archivos con identificadores aleatorios en `backend/uploads/<usuario>/`; MySQL guarda su ruta. Las imágenes son públicas para mostrar el catálogo, y Vite las sirve mediante el proxy `/api/uploads`. No se eliminan imágenes antiguas al reemplazarlas ni al cancelar un formulario. Incluye `backend/uploads/` en tus copias de seguridad junto con MySQL; la carpeta se excluye de Git. En producción configura también un límite de tamaño de peticiones en el proxy.
+
+Después de actualizar dependencias, reinicia FastAPI. El inicio o `python -m backend.init_db` aplica los nuevos campos a la base sin borrar registros. `backend/schema.sql` es para instalaciones nuevas; para actualizar una instalación existente usa el inicializador o el arranque de la API.
+
+## Seguridad de acceso
 
 Contraseñas con scrypt y sal aleatoria por usuario. Sesiones aleatorias de ocho horas, guardadas como SHA-256 en la base; cookie HttpOnly y SameSite=Lax, revocada al cerrar sesión. Validación de Origin en escrituras con cookie para prevenir CSRF y CORS limitado al origen configurado. No se guardan contraseñas ni tokens en localStorage. No hay rol administrador global ni elevación de permisos en el registro.
 

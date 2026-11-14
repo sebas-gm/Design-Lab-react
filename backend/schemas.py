@@ -1,4 +1,5 @@
 from decimal import Decimal
+import re
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -26,12 +27,26 @@ class BusinessIn(Input):
     imagen: str = Field(default='', max_length=2048)
     latitud: float | None = Field(default=None, ge=-90, le=90)
     longitud: float | None = Field(default=None, ge=-180, le=180)
+    telefono: str = Field(default='', max_length=30, pattern=r'^[+\d\s().-]*$')
+    correo_contacto: EmailStr | Literal[''] = ''
+    enlace_mapa: str = Field(default='', max_length=2048)
+    hora_apertura: str = Field(default='', pattern=r'^(?:[01]\d|2[0-3]):[0-5]\d$|^$')
+    hora_cierre: str = Field(default='', pattern=r'^(?:[01]\d|2[0-3]):[0-5]\d$|^$')
+    logo: str = Field(default='', max_length=2048)
 
-    @field_validator('imagen')
+    @field_validator('imagen', 'logo')
     @classmethod
     def image_url(cls, value):
+        local = re.fullmatch(r'/api/uploads/\d+/[a-f0-9]{32}\.webp', value)
+        if value and not local and not value.startswith(('https://', 'http://')):
+            raise ValueError('Selecciona una imagen válida')
+        return value
+
+    @field_validator('enlace_mapa')
+    @classmethod
+    def map_url(cls, value):
         if value and not value.startswith(('https://', 'http://')):
-            raise ValueError('La imagen debe usar http o https')
+            raise ValueError('El enlace del mapa debe usar http o https')
         return value
 
     @model_validator(mode='after')

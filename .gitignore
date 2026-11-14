@@ -6,6 +6,7 @@ __pycache__/
 .env
 *.db
 pytest-cache-files-*/
+backend/uploads/
 
 # Local safety copy of superseded root Node files
 .reorganization-backup/

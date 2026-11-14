@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
@@ -12,6 +13,8 @@ from backend.database import Base, get_db, make_engine
 from backend.models import Business, Product, Session, User
 from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register
 from backend.security import hash_password, token_hash, verify_password
+from backend.migrations import migrate_business_details
+from backend.uploads import UPLOAD_DIR, save_image
 
 engine = make_engine()
 origin = os.getenv('FRONTEND_ORIGIN', 'http://localhost:5173')
@@ -22,6 +25,8 @@ secure = os.getenv('COOKIE_SECURE', 'false').lower() == 'true'
 async def lifespan(app):
     # Only creates missing tables. Never drops or replaces existing data.
     Base.metadata.create_all(engine)
+    migrate_business_details(engine)
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
 
@@ -112,6 +117,11 @@ def login(data: Login, response: Response, db=Depends(get_db)):
 
 
 DUMMY_HASH = hash_password(secrets.token_urlsafe(32))
+
+
+@app.post('/api/imagenes', status_code=201)
+async def upload_image(request: Request, user=Depends(current_user)):
+    return await save_image(request, user.id)
 
 
 @app.get('/api/auth/me')
@@ -223,3 +233,7 @@ def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_d
             db.add(Product(**old.model_dump(exclude={'id', 'negocioId'}), negocioId=business_id, legacy_id=str(old.id)))
     db.commit()
     return {'message': 'Importación completada. Los datos originales siguen en el navegador.'}
+
+
+# Public images of businesses/products; writes always require authentication.
+app.mount('/api/uploads', StaticFiles(directory=UPLOAD_DIR, check_dir=False), name='uploads')

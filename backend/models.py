@@ -29,6 +29,12 @@ class Business(Base):
     latitud = Column(Numeric(10, 7), nullable=True)
     longitud = Column(Numeric(10, 7), nullable=True)
     legacy_id = Column(String(80), nullable=True)
+    telefono = Column(String(30), nullable=False, default='', server_default='')
+    correo_contacto = Column(String(254), nullable=False, default='', server_default='')
+    enlace_mapa = Column(String(2048), nullable=False, default='', server_default='')
+    hora_apertura = Column(String(5), nullable=False, default='', server_default='')
+    hora_cierre = Column(String(5), nullable=False, default='', server_default='')
+    logo = Column(String(2048), nullable=False, default='', server_default='')
     __table_args__ = (UniqueConstraint('owner_id', 'legacy_id'),)
 
 
