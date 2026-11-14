@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import select, text
+from sqlalchemy import select, text, or_
 from sqlalchemy.exc import IntegrityError
 
 from backend.database import Base, get_db, make_engine
@@ -14,7 +14,7 @@ from backend.models import Business, Product, Session, User, Video
 from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn, ProfileUpdate
 from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
-from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile
+from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin
 from backend.uploads import UPLOAD_DIR, save_image
 
 engine = make_engine()
@@ -30,6 +30,7 @@ async def lifespan(app):
     migrate_account_types(engine)
     migrate_single_business(engine)
     migrate_profile(engine)
+    migrate_admin(engine)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
@@ -68,7 +69,7 @@ def current_user(request: Request, db=Depends(get_db)):
 
 
 def public_user(user):
-    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta, 'avatar': user.avatar, 'reducir_movimiento': user.reducir_movimiento}
+    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta, 'avatar': user.avatar, 'reducir_movimiento': user.reducir_movimiento, 'is_admin': user.is_admin}
 
 
 def business_user(user=Depends(current_user)):
@@ -163,14 +164,16 @@ def update_profile(data: ProfileUpdate, user=Depends(current_user), db=Depends(g
     return public_user(user)
 
 
-@app.get('/api/negocios', dependencies=[Depends(current_user)])
-def businesses(db=Depends(get_db)):
-    return [serialize(item) for item in db.scalars(select(Business).order_by(Business.id.desc()))]
+@app.get('/api/negocios')
+def businesses(user=Depends(current_user), db=Depends(get_db)):
+    query = select(Business).where(or_(Business.estado == 'activo', Business.owner_id == user.id)).order_by(Business.id.desc())
+    return [serialize(item) for item in db.scalars(query)]
 
 
-@app.get('/api/productos', dependencies=[Depends(current_user)])
-def products(db=Depends(get_db)):
-    return [serialize(item) for item in db.scalars(select(Product).order_by(Product.id.desc()))]
+@app.get('/api/productos')
+def products(user=Depends(current_user), db=Depends(get_db)):
+    query = select(Product).join(Business).where(or_(Business.estado == 'activo', Business.owner_id == user.id)).order_by(Product.id.desc())
+    return [serialize(item) for item in db.scalars(query)]
 
 
 @app.post('/api/negocios', status_code=201)
@@ -202,6 +205,8 @@ def update_business(item_id: int, data: BusinessIn, user=Depends(current_user), 
 @app.delete('/api/negocios/{item_id}', status_code=204)
 def delete_business(item_id: int, user=Depends(current_user), db=Depends(get_db)):
     item = owned(db, item_id, user)
+    if item.estado != 'activo':
+        raise HTTPException(403, 'Un negocio suspendido o archivado solo puede eliminarlo la administración')
     if db.scalar(select(Product.id).where(Product.negocioId == item_id).limit(1)):
         raise HTTPException(409, 'Elimina primero sus productos; no se borrarán en cascada')
     if db.scalar(select(Video.id).where(Video.negocioId == item_id).limit(1)):
@@ -284,11 +289,11 @@ def video_data(item):
     return {**serialize(item), 'plataforma': provider, 'embed_url': embed}
 
 
-@app.get('/api/videos', dependencies=[Depends(current_user)])
-def list_videos(negocio_id: int | None = None, offset: int = 0, db=Depends(get_db)):
+@app.get('/api/videos')
+def list_videos(negocio_id: int | None = None, offset: int = 0, user=Depends(current_user), db=Depends(get_db)):
     if offset < 0:
         raise HTTPException(422, 'Página inválida')
-    query = select(Video).order_by(Video.id.desc())
+    query = select(Video).join(Business).where(or_(Business.estado == 'activo', Business.owner_id == user.id)).order_by(Video.id.desc())
     if negocio_id is not None:
         query = query.where(Video.negocioId == negocio_id)
     return [video_data(item) for item in db.scalars(query.offset(offset).limit(12))]
@@ -334,4 +339,6 @@ def delete_video(item_id: int, user=Depends(current_user), db=Depends(get_db)):
 
 
 # Public images of businesses/products; writes always require authentication.
+from backend.admin import router as admin_router
+app.include_router(admin_router)
 app.mount('/api/uploads', StaticFiles(directory=UPLOAD_DIR, check_dir=False), name='uploads')

@@ -11,11 +11,21 @@ async function upload(file) {
   return (await api("/imagenes", { method: "POST", body })).url;
 }
 
-export default function EntityForm({ kind, initial, onSaved, onCancel }) {
+export default function EntityForm({
+  kind,
+  initial,
+  onSaved,
+  onCancel,
+  adminMode = false,
+  owners = [],
+  availableBusinesses = [],
+}) {
   const confirm = useConfirm();
   const business = kind === "negocios";
   const { negocios, user, refresh } = useLab();
-  const mine = negocios.filter((n) => n.owner_id === user.id);
+  const mine = adminMode
+    ? availableBusinesses
+    : negocios.filter((n) => n.owner_id === user.id);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [photo, setPhoto] = useState(null);
@@ -27,8 +37,9 @@ export default function EntityForm({ kind, initial, onSaved, onCancel }) {
     const entity = business ? "negocio" : "producto";
     const question = initial
       ? `¿Quieres guardar los cambios de este ${entity}?`
-      : `¿Quieres registrar y publicar este ${entity}?${business && user.tipo_cuenta === "personal" ? " Se activará tu cuenta de negocios." : ""}`;
+      : `¿Quieres registrar y publicar este ${entity}?${business && user.tipo_cuenta === "personal" && !adminMode ? " Se activará tu cuenta de negocios." : ""}`;
     const values = Object.fromEntries(new FormData(event.currentTarget));
+    if (adminMode && business) values.owner_id = Number(values.owner_id);
     if (!(await confirm(question, "save"))) return;
     setError("");
     setBusy(true);
@@ -60,10 +71,13 @@ export default function EntityForm({ kind, initial, onSaved, onCancel }) {
         setUploaded((previous) => ({ ...previous, logo: { file: logo, url } }));
         values.logo = url;
       }
-      await api(`/${kind}${initial ? `/${initial.id}` : ""}`, {
-        method: initial ? "PUT" : "POST",
-        body: values,
-      });
+      await api(
+        `/${adminMode ? "admin/" : ""}${kind}${initial ? `/${initial.id}` : ""}`,
+        {
+          method: initial ? "PUT" : "POST",
+          body: values,
+        },
+      );
       await refresh();
       onSaved();
     } catch (e) {
@@ -79,6 +93,26 @@ export default function EntityForm({ kind, initial, onSaved, onCancel }) {
         <legend>
           {business ? "1. Datos principales" : "Datos del producto"}
         </legend>
+        {adminMode && business && (
+          <label>
+            Cuenta propietaria *
+            <select
+              name="owner_id"
+              defaultValue={initial?.owner_id || ""}
+              required
+            >
+              <option value="">Selecciona una cuenta</option>
+              {owners
+                .filter((u) => !u.negocio_id || u.negocio_id === initial?.id)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nombre} · {u.correo}
+                  </option>
+                ))}
+            </select>
+            <small>Cada cuenta puede ser propietaria de un solo negocio.</small>
+          </label>
+        )}
         {!business && (
           <label>
             Negocio *

@@ -53,6 +53,11 @@ function DetalleNegocio() {
         <span className="detalle-categoria">{negocio.categoria}</span>
 
         <h1>{negocio.nombre}</h1>
+        {negocio.estado && negocio.estado !== "activo" && (
+          <p role="status">
+            Este negocio está {negocio.estado} y no se muestra a otros usuarios.
+          </p>
+        )}
         <p>
           <Link to={`/videos?negocio=${negocio.id}`}>
             Ver los videos de este negocio ↗

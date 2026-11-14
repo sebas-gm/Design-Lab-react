@@ -328,3 +328,83 @@ def test_profile_migration_preserves_users():
     with isolated.connect() as db:
         assert db.execute(text('SELECT nombre, avatar, reducir_movimiento FROM users')).one() == ('Anterior', '', 0)
     isolated.dispose()
+
+
+def test_system_admin_permissions_visibility_and_audit(clients):
+    from sqlalchemy.orm import Session
+    from sqlalchemy import select
+    from backend.models import User
+    admin, owner = clients
+    assert admin.get('/api/admin/usuarios').status_code == 401
+    signup(admin, 'system-admin@example.com')
+    signup(owner, 'owner-managed@example.com')
+    assert admin.get('/api/admin/negocios').status_code == 403
+    with Session(engine) as db:
+        account = db.scalar(select(User).where(User.correo == 'system-admin@example.com'))
+        account.is_admin = True
+        db.commit()
+    assert admin.get('/api/auth/me').json()['is_admin'] is True
+    target_id = owner.get('/api/auth/me').json()['id']
+    response = admin.post('/api/admin/negocios', json={**BUSINESS, 'owner_id': target_id})
+    assert response.status_code == 201, response.text
+    business_id = response.json()['id']
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'negocios'
+    assert admin.post('/api/admin/negocios', json={**BUSINESS, 'owner_id': target_id}).status_code == 409
+    assert admin.get('/api/auth/me').json()['tipo_cuenta'] == 'personal'
+    users = admin.get('/api/admin/usuarios').json()
+    assert len(users) == 2 and all('password_hash' not in u for u in users)
+    assert owner.get('/api/admin/usuarios').status_code == 403
+    product = {'negocioId': business_id, 'nombre': 'Producto', 'precio': 10, 'descripcion': 'Prueba'}
+    p = admin.post('/api/admin/productos', json=product)
+    assert p.status_code == 201, p.text
+    pid = p.json()['id']
+    v = admin.post('/api/admin/videos', json={'negocioId': business_id, 'titulo': 'Video', 'url': 'https://youtu.be/M7lc1UVf-VE'})
+    assert v.status_code == 201
+    vid = v.json()['id']
+    assert admin.put(f'/api/admin/productos/{pid}', json={**product, 'precio': 12}).status_code == 200
+    assert admin.patch(f'/api/admin/productos/{pid}/promocion', json={'promocion': True}).json()['promocion'] is True
+    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'suspendido'}).status_code == 200
+    # An unrelated account cannot see the suspended business or its content.
+    assert admin.get('/api/negocios').json() == []
+    assert admin.get('/api/productos').json() == []
+    assert admin.get('/api/videos').json() == []
+    # Its owner retains access to fix their information, but cannot bypass moderation.
+    assert len(owner.get('/api/negocios').json()) == 1
+    assert owner.delete(f'/api/negocios/{business_id}').status_code == 403
+    assert owner.put(f'/api/negocios/{business_id}', json={**BUSINESS, 'estado': 'activo'}).status_code == 422
+    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'activo'}).status_code == 200
+    assert len(admin.get('/api/negocios').json()) == 1
+    assert admin.delete(f'/api/admin/negocios/{business_id}').status_code == 409
+    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'archivado'}).status_code == 200
+    assert admin.delete(f'/api/admin/negocios/{business_id}').status_code == 409
+    assert admin.delete(f'/api/admin/productos/{pid}').status_code == 204
+    assert admin.delete(f'/api/admin/videos/{vid}').status_code == 204
+    assert admin.delete(f'/api/admin/negocios/{business_id}').status_code == 204
+    logs = admin.get('/api/admin/historial').json()
+    assert len(logs) >= 10
+    assert any(log['accion'] == 'eliminar' and log['recurso'] == 'negocio' for log in logs)
+    assert owner.get('/api/admin/historial').status_code == 403
+    assert owner.patch('/api/auth/profile', json={'is_admin': True}).status_code == 422
+
+
+def test_admin_ownership_transfer_and_local_provisioning(clients, monkeypatch):
+    from sqlalchemy.orm import Session
+    from sqlalchemy import select
+    from backend.models import User
+    from backend import manage_admin
+    admin, owner = clients
+    signup(admin, 'admin-local@example.com')
+    signup(owner, 'owner-local@example.com')
+    monkeypatch.setattr(manage_admin, 'make_engine', lambda: engine)
+    monkeypatch.setattr(engine, 'dispose', lambda: None)
+    monkeypatch.setattr('sys.argv', ['manage_admin', '--email', 'admin-local@example.com'])
+    manage_admin.main()
+    assert admin.get('/api/auth/me').status_code == 401
+    logged = admin.post('/api/auth/login', json={'correo': 'admin-local@example.com', 'contrasena': 'Prueba-segura-2026'})
+    assert logged.json()['is_admin'] is True
+    business = owner.post('/api/negocios', json=BUSINESS).json()
+    admin_id = logged.json()['id']
+    moved = admin.put(f"/api/admin/negocios/{business['id']}", json={**BUSINESS, 'owner_id': admin_id})
+    assert moved.status_code == 200, moved.text
+    assert owner.put(f"/api/negocios/{business['id']}", json=BUSINESS).status_code == 403
+    assert admin.get('/api/admin/historial').json()

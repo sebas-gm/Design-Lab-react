@@ -11,6 +11,7 @@ class User(Base):
     tipo_cuenta = Column(String(16), nullable=False, default='personal', server_default='personal')
     avatar = Column(String(2048), nullable=False, default='', server_default='')
     reducir_movimiento = Column(Boolean, nullable=False, default=False, server_default='0')
+    is_admin = Column(Boolean, nullable=False, default=False, server_default='0')
 
 
 class Session(Base):
@@ -38,6 +39,7 @@ class Business(Base):
     hora_apertura = Column(String(5), nullable=False, default='', server_default='')
     hora_cierre = Column(String(5), nullable=False, default='', server_default='')
     logo = Column(String(2048), nullable=False, default='', server_default='')
+    estado = Column(String(16), nullable=False, default='activo', server_default='activo')
     __table_args__ = (UniqueConstraint('owner_id', 'legacy_id'), UniqueConstraint('owner_id', name='uq_business_owner'))
 
 
@@ -60,3 +62,14 @@ class Video(Base):
     negocioId = Column(ForeignKey('businesses.id'), nullable=False, index=True)
     titulo = Column(String(160), nullable=False)
     url = Column(String(2048), nullable=False)
+
+
+class AuditLog(Base):
+    __tablename__ = 'audit_logs'
+    id = Column(Integer, primary_key=True)
+    actor_id = Column(ForeignKey('users.id'), nullable=False, index=True)
+    accion = Column(String(40), nullable=False)
+    recurso = Column(String(30), nullable=False)
+    recurso_id = Column(Integer, nullable=False)
+    fecha = Column(DateTime, nullable=False)
+    detalle = Column(Text, nullable=False)

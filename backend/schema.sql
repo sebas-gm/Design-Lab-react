@@ -1,4 +1,4 @@
--- Creates only Navishop. Never deletes existing databases.
+-- Navishop. Never deletes existing databases.
 CREATE DATABASE IF NOT EXISTS design_lab_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE design_lab_db;
 
@@ -10,8 +10,21 @@ CREATE TABLE IF NOT EXISTS users (
 	tipo_cuenta VARCHAR(16) NOT NULL DEFAULT 'personal',
 	avatar VARCHAR(2048) NOT NULL DEFAULT '',
 	reducir_movimiento BOOL NOT NULL DEFAULT '0',
+	is_admin BOOL NOT NULL DEFAULT '0',
 	PRIMARY KEY (id),
 	UNIQUE (correo)
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+	id INTEGER NOT NULL AUTO_INCREMENT,
+	actor_id INTEGER NOT NULL,
+	accion VARCHAR(40) NOT NULL,
+	recurso VARCHAR(30) NOT NULL,
+	recurso_id INTEGER NOT NULL,
+	fecha DATETIME NOT NULL,
+	detalle TEXT NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY(actor_id) REFERENCES users (id)
 );
 
 CREATE TABLE IF NOT EXISTS businesses (
@@ -31,6 +44,7 @@ CREATE TABLE IF NOT EXISTS businesses (
 	hora_apertura VARCHAR(5) NOT NULL DEFAULT '',
 	hora_cierre VARCHAR(5) NOT NULL DEFAULT '',
 	logo VARCHAR(2048) NOT NULL DEFAULT '',
+	estado VARCHAR(16) NOT NULL DEFAULT 'activo',
 	PRIMARY KEY (id),
 	UNIQUE (owner_id, legacy_id),
 	CONSTRAINT uq_business_owner UNIQUE (owner_id),

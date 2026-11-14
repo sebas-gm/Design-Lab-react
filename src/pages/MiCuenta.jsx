@@ -116,7 +116,13 @@ export default function MiCuenta() {
   }
 
   async function logout() {
-    if (!(await confirm('Tendrás que iniciar sesión de nuevo para volver a tu cuenta.', 'logout'))) return;
+    if (
+      !(await confirm(
+        "Tendrás que iniciar sesión de nuevo para volver a tu cuenta.",
+        "logout",
+      ))
+    )
+      return;
     setBusy(true);
     setError("");
     try {
@@ -176,7 +182,9 @@ export default function MiCuenta() {
           <p>{user.correo}</p>
           <span className="account-type">
             <ProfileIcon name={business ? "shop" : "user"} />
-            Cuenta {business ? "de negocios" : "personal"}
+            {user.is_admin
+              ? "Administrador del sistema"
+              : `Cuenta ${business ? "de negocios" : "personal"}`}
           </span>
         </div>
         <button

@@ -46,3 +46,12 @@ def migrate_profile(engine):
             connection.execute(text("ALTER TABLE users ADD COLUMN avatar VARCHAR(2048) NOT NULL DEFAULT ''"))
         if 'reducir_movimiento' not in existing:
             connection.execute(text('ALTER TABLE users ADD COLUMN reducir_movimiento BOOLEAN NOT NULL DEFAULT 0'))
+
+
+def migrate_admin(engine):
+    inspector = inspect(engine)
+    with engine.begin() as connection:
+        if 'is_admin' not in {column['name'] for column in inspector.get_columns('users')}:
+            connection.execute(text('ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0'))
+        if 'estado' not in {column['name'] for column in inspector.get_columns('businesses')}:
+            connection.execute(text("ALTER TABLE businesses ADD COLUMN estado VARCHAR(16) NOT NULL DEFAULT 'activo'"))

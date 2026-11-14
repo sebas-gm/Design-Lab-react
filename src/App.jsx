@@ -1,4 +1,5 @@
 import AppLayout from "./components/AppLayout";
+import AdminPanel from "./pages/AdminPanel";
 import ConfirmationProvider from "./components/ConfirmationProvider";
 import Welcome from "./pages/Welcome";
 import LabProvider from "./components/LabProvider";
@@ -56,6 +57,14 @@ function App() {
                 }
               >
                 <Route path="/mi-cuenta" element={<MiCuenta />} />
+                <Route
+                  path="/admin/*"
+                  element={
+                    <ProtectedRoute admin>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/activar-negocio" element={<ActivarNegocio />} />
                 <Route path="/inicio" element={<Home />} />
                 <Route path="/negocios" element={<Negocios />} />

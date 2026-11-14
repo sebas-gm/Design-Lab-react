@@ -10,10 +10,13 @@ export default function AppLayout() {
   const { pathname } = useLocation();
   const { user } = useLab();
   const workspace =
-    user?.tipo_cuenta === "negocios" && !isClientView(user, pathname);
+    (user?.is_admin || user?.tipo_cuenta === "negocios") &&
+    !isClientView(user, pathname);
   if (["/", "/login", "/registro"].includes(pathname)) {
     return (
-      <div className={`entry-layout ${pathname === '/' ? 'welcome-layout' : ''}`}>
+      <div
+        className={`entry-layout ${pathname === "/" ? "welcome-layout" : ""}`}
+      >
         <Outlet />
       </div>
     );

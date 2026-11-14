@@ -100,3 +100,11 @@ class LegacyProduct(ProductIn):
 class ImportData(Input):
     negocios: list[LegacyBusiness] = Field(max_length=500)
     productos: list[LegacyProduct] = Field(max_length=5000)
+
+
+class AdminBusinessIn(BusinessIn):
+    owner_id: int = Field(gt=0)
+
+
+class BusinessStatus(Input):
+    estado: Literal['activo', 'suspendido', 'archivado']

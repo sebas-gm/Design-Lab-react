@@ -71,7 +71,7 @@ Después de actualizar dependencias, reinicia FastAPI. El inicio o `python -m ba
 
 ## Seguridad de acceso
 
-Contraseñas con scrypt y sal aleatoria por usuario. Sesiones aleatorias de ocho horas, guardadas como SHA-256 en la base; cookie HttpOnly y SameSite=Lax, revocada al cerrar sesión. Validación de Origin en escrituras con cookie para prevenir CSRF y CORS limitado al origen configurado. No se guardan contraseñas ni tokens en localStorage. No hay rol administrador global ni elevación de permisos en el registro.
+Contraseñas con scrypt y sal aleatoria por usuario. Sesiones aleatorias de ocho horas, guardadas como SHA-256 en la base; cookie HttpOnly y SameSite=Lax, revocada al cerrar sesión. Validación de Origin en escrituras con cookie para prevenir CSRF y CORS limitado al origen configurado. No se guardan contraseñas ni tokens en localStorage. El registro no permite conceder permisos administrativos; se habilitan mediante un comando local.
 
 Para producción usa HTTPS, `COOKIE_SECURE=true`, limita intentos de acceso en el proxy, sirve frontend y `/api` desde el mismo origen, limita permisos del usuario MySQL y realiza copias de seguridad. El servidor de Vite es para desarrollo. `npm.cmd run build` genera `dist`; el servidor final debe reenviar `/api` al backend y resolver las rutas React hacia `index.html`. No uses `DATABASE_URL` de pruebas para producción.
 
@@ -103,6 +103,29 @@ Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Pa
 
 ## Barra lateral y videos
 
+### Administración del sistema
+
+El administrador del sistema es un permiso independiente (`users.is_admin`), adicional al tipo de cuenta personal o de negocios. Después de iniciar sesión entra a `/admin` y obtiene una barra lateral con Panel del sistema, Todos los negocios, Usuarios, Contenido, Historial y Mi cuenta. Puede explorar la plataforma con **Ver como cliente** y regresar a su panel. Las rutas de React y todos los endpoints `/api/admin/*` verifican el permiso; el registro y la edición de perfil nunca pueden concederlo.
+
+Para habilitar una cuenta **ya registrada**, desde una terminal local de confianza en `Proyecto React`:
+
+```powershell
+.\.venv\Scripts\python -m backend.init_db
+.\.venv\Scripts\python -m backend.manage_admin --email CORREO_DE_LA_CUENTA
+```
+
+Sustituye `CORREO_DE_LA_CUENTA` por el correo real. No se crean contraseñas ni usuarios predeterminados. El comando revoca las sesiones anteriores de la cuenta y registra la habilitación en el historial; después hay que iniciar sesión de nuevo. Debe ejecutarlo exclusivamente quien tenga acceso autorizado al servidor y a la configuración MySQL. No existe un botón público para hacerse administrador.
+
+**Negocios:** crear y editar negocios asignando una cuenta propietaria registrada. Cada propietario sigue limitado a un negocio, incluso si la creación la realiza un administrador. La asignación activa el tipo de cuenta de negocios del propietario, no el del administrador. Se puede transferir la propiedad a otra cuenta sin negocio. El propietario anterior conserva su cuenta, pero pierde los permisos sobre ese negocio.
+
+**Estados:** `activo`, `suspendido`, `archivado`. Suspender o archivar oculta el negocio y sus productos/promociones/videos del catálogo para otros usuarios. Su propietario conserva acceso a los registros para corregir su información y ve el estado en el detalle. No puede reactivarlo ni eliminarlo para eludir la suspensión. Las URLs de imágenes ya publicadas siguen disponibles; cambiar el estado no elimina archivos.
+
+**Borrado definitivo:** solo desde administración, después de archivar el negocio y retirar sus productos y enlaces de video. No hay borrado en cascada ni eliminación de imágenes. Archivar permite conservar todo y restaurarlo después.
+
+**Usuarios:** consultar cuentas y su negocio asignado, sin exponer contraseñas. No se habilita eliminación de usuarios ni cambio de roles desde la interfaz. **Contenido:** crear, editar y eliminar productos y enlaces de video de cualquier negocio y cambiar promociones. **Historial:** últimas 100 acciones administrativas, con administrador, fecha UTC, operación y recurso; se guarda en `audit_logs` en la misma transacción que cada cambio. No se registran contraseñas, tokens ni credenciales MySQL.
+
+La migración `migrate_admin` agrega el permiso y estado por defecto sin borrar registros: las cuentas existentes permanecen sin permisos administrativos hasta habilitarlas explícitamente, y los negocios existentes quedan activos. El inicio de FastAPI o el inicializador crea también `audit_logs`. Respaldo previo: `65a46f8`, etiqueta `respaldo-antes-admin`.
+
 ### Mi cuenta y perfil
 
 La vista `/mi-cuenta` presenta una tarjeta con nombre, correo, avatar y tipo de cuenta. **Editar perfil** permite cambiar el nombre y seleccionar una foto local con el mismo validador JPG/PNG/WebP de hasta 5 MB. La foto se guarda en `backend/uploads/` y su ruta en `users.avatar`. La edición de correo no está incluida; se muestra como dato de identificación de la cuenta. El avatar también se muestra en la barra lateral.
@@ -125,7 +148,7 @@ Solo registro e inicio de sesión son vistas públicas. Al entrar sin sesión a 
 
 **Mi cuenta** muestra nombre, correo y tipo de cuenta. **Registrar mi negocio** abre `/activar-negocio`, explica la activación gratuita y lleva al formulario existente. El primer negocio y `users.tipo_cuenta = 'negocios'` se guardan en la misma transacción. Cancelar o fallar una validación deja la cuenta personal. No se puede elegir un tipo privilegiado durante el registro de usuario. Al activar se habilitan Mi panel, Mi negocio, Mis productos, Mis promociones y Mis videos. Los botones de creación siguen disponibles dentro de esas vistas.
 
-La API exige cuenta de negocios y propiedad para modificar negocios, productos, promociones y videos. Las imágenes se pueden subir con una cuenta personal para completar el primer formulario: subir una imagen no activa la cuenta. Los archivos de imagen siguen teniendo rutas públicas para compatibilidad; las vistas y los datos del catálogo requieren sesión. No existe administrador global.
+La API exige cuenta de negocios y propiedad para modificar negocios, productos, promociones y videos. Las imágenes se pueden subir con una cuenta personal para completar el primer formulario: subir una imagen no activa la cuenta. Los archivos de imagen siguen teniendo rutas públicas para compatibilidad; las vistas y los datos del catálogo requieren sesión. El administrador del sistema dispone de endpoints separados con permisos propios.
 
 La migración `migrate_account_types` agrega el campo sin borrar usuarios y convierte en cuentas de negocios a los propietarios existentes. Importar un negocio anterior también activa la cuenta en la misma transacción; una importación vacía o fallida no activa nada. Cada cuenta puede tener un solo negocio. Eliminar el negocio no desactiva la cuenta de negocios.
 

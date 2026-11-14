@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { useLab } from "../context";
 import { api } from "../api";
-import { useConfirm } from '../confirmation';
+import { useConfirm } from "../confirmation";
 import { accountHome, isClientView } from "../navigation";
 import "../styles/navbar.css";
 
@@ -20,9 +20,18 @@ const ownerLinks = [
   ["/administrar-promociones", "Mis promociones", "tag"],
   ["/administrar-videos", "Mis videos", "play"],
 ];
+const adminLinks = [
+  ["/admin", "Panel del sistema", "grid"],
+  ["/admin/negocios", "Todos los negocios", "shop"],
+  ["/admin/usuarios", "Usuarios", "user"],
+  ["/admin/contenido", "Contenido", "play"],
+  ["/admin/historial", "Historial", "grid"],
+  ["/mi-cuenta", "Mi cuenta", "user"],
+];
 
 function Icon({ name }) {
   const paths = {
+    user: "M20 21v-2a7 7 0 0 0-14 0v2M17 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
     home: "M3 10 12 3l9 7v10H3V10m6 10v-7h6v7",
     shop: "M4 10v11h16V10M2 10l3-7h14l3 7M8 21v-7h8v7M2 10h20",
     play: "M9 7v10l8-5-8-5M3 3h18v18H3z",
@@ -50,7 +59,7 @@ function Icon({ name }) {
 export default function Navbar() {
   const confirm = useConfirm();
   const { user, setUser } = useLab();
-  const business = user?.tipo_cuenta === "negocios";
+  const business = user?.is_admin || user?.tipo_cuenta === "negocios";
   const { pathname } = useLocation();
   const clientView = isClientView(user, pathname);
   const workspace = business && !clientView;
@@ -66,7 +75,13 @@ export default function Navbar() {
   }, []);
 
   async function logout() {
-    if (!(await confirm('Tendrás que iniciar sesión de nuevo para volver a tu cuenta.', 'logout'))) return;
+    if (
+      !(await confirm(
+        "Tendrás que iniciar sesión de nuevo para volver a tu cuenta.",
+        "logout",
+      ))
+    )
+      return;
     try {
       await api("/auth/logout", { method: "POST" });
       setUser(null);
@@ -113,7 +128,9 @@ export default function Navbar() {
             Navishop
             <small>
               {workspace
-                ? "El espacio de tu negocio"
+                ? user?.is_admin
+                  ? "Administración de Navishop"
+                  : "El espacio de tu negocio"
                 : "Descubre lo que está cerca"}
             </small>
           </span>
@@ -136,7 +153,7 @@ export default function Navbar() {
         {business && (
           <Link
             className={`view-switch ${workspace ? "from-workspace" : ""}`}
-            to={clientView ? "/dashboard" : "/inicio"}
+            to={clientView ? accountHome(user) : "/inicio"}
             onClick={() => setOpen(false)}
           >
             {clientView ? "Volver a mi panel" : "Ver como cliente"}{" "}
@@ -152,7 +169,7 @@ export default function Navbar() {
           >
             {user && (
               <span className="topbar-user-avatar" aria-hidden="true">
-              <span>{user.nombre?.[0]?.toUpperCase() || "N"}</span>
+                <span>{user.nombre?.[0]?.toUpperCase() || "N"}</span>
                 {user.avatar && (
                   <img
                     src={user.avatar}
@@ -190,8 +207,12 @@ export default function Navbar() {
       {workspace && (
         <aside id="sidebar" className={`sidebar ${open ? "is-open" : ""}`}>
           <nav aria-label="Herramientas de tu negocio">
-            <p className="sidebar-label">Mi espacio de negocios</p>
-            {links(ownerLinks)}
+            <p className="sidebar-label">
+              {user?.is_admin
+                ? "Administración general"
+                : "Mi espacio de negocios"}
+            </p>
+            {links(user?.is_admin ? adminLinks : ownerLinks)}
           </nav>
           <div className="sidebar-profile">
             <span className="profile-avatar">
@@ -205,9 +226,11 @@ export default function Navbar() {
               <strong>{user?.nombre || "Tu comunidad local"}</strong>
               <small>
                 {user
-                  ? user.tipo_cuenta === "negocios"
-                    ? "Cuenta de negocios"
-                    : "Cuenta personal"
+                  ? user.is_admin
+                    ? "Administrador del sistema"
+                    : user.tipo_cuenta === "negocios"
+                      ? "Cuenta de negocios"
+                      : "Cuenta personal"
                   : "Cerca de TECBA"}
               </small>
             </div>
