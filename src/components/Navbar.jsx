@@ -5,7 +5,7 @@ import { api } from "../api";
 import "../styles/navbar.css";
 
 const publicLinks = [
-  ["/", "Inicio", "home"],
+  ["/inicio", "Inicio", "home"],
   ["/negocios", "Negocios", "shop"],
   ["/videos", "Videos", "play"],
   ["/promociones", "Promociones", "tag"],

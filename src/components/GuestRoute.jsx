@@ -3,5 +3,5 @@ import { useLab } from "../context";
 export default function GuestRoute({ children }) {
   const { user, ready } = useLab();
   if (!ready) return <main>Cargando sesión…</main>;
-  return user ? <Navigate to="/" replace /> : children;
+  return user ? <Navigate to="/inicio" replace /> : children;
 }

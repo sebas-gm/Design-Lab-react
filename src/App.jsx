@@ -1,3 +1,5 @@
+import AppLayout from "./components/AppLayout";
+import Welcome from "./pages/Welcome";
 import LabProvider from "./components/LabProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -15,11 +17,8 @@ import AdministrarProductos from "./pages/AdministrarProductos";
 import AdministrarNegocios from "./pages/AdministrarNegocios";
 import AdministrarPromociones from "./pages/AdministrarPromociones";
 
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import Videos from "./pages/Videos";
 import Promociones from "./pages/Promociones";
-import CatalogStatus from "./components/CatalogStatus";
 import MiCuenta from "./pages/MiCuenta";
 import ActivarNegocio from "./pages/ActivarNegocio";
 import GuestRoute from "./components/GuestRoute";
@@ -28,10 +27,9 @@ function App() {
   return (
     <LabProvider>
       <BrowserRouter>
-        <Navbar />
-        <div className="app-content">
-          <CatalogStatus />
-          <Routes>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Welcome />} />
             <Route
               path="/registro"
               element={
@@ -57,7 +55,7 @@ function App() {
             >
               <Route path="/mi-cuenta" element={<MiCuenta />} />
               <Route path="/activar-negocio" element={<ActivarNegocio />} />
-              <Route path="/" element={<Home />} />
+              <Route path="/inicio" element={<Home />} />
               <Route path="/negocios" element={<Negocios />} />
               <Route path="/negocios/:id" element={<DetalleNegocio />} />
               <Route path="/videos" element={<Videos key="public-videos" />} />
@@ -128,10 +126,8 @@ function App() {
                 }
               />
             </Route>
-          </Routes>
-
-          <Footer />
-        </div>
+          </Route>
+        </Routes>
       </BrowserRouter>
     </LabProvider>
   );

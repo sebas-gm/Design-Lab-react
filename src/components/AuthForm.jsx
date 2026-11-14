@@ -30,7 +30,7 @@ export default function AuthForm({ register = false }) {
           body,
         }),
       );
-      navigate(location.state?.from || "/", { replace: true });
+      navigate(location.state?.from || "/inicio", { replace: true });
     } catch (e) {
       setMessage(e.message);
     } finally {
@@ -39,6 +39,9 @@ export default function AuthForm({ register = false }) {
   }
   return (
     <main className="login">
+      <Link to="/" className="entry-back">
+        ← Volver a la bienvenida
+      </Link>
       <h1>{register ? "Crear una cuenta" : "Iniciar sesión"}</h1>
       <p>Descubre negocios, videos y promociones cerca de TECBA.</p>
       <form onSubmit={submit}>

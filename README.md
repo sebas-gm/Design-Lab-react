@@ -97,6 +97,14 @@ Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Pa
 
 ## Barra lateral y videos
 
+### Pantalla de bienvenida
+
+La dirección principal `/` muestra una bienvenida a pantalla completa, con identidad morada, fotografía urbana ilustrativa y el botón **Iniciar sesión**. No tiene barra lateral, catálogo ni opción de omitir. El enlace secundario permite crear una cuenta. Login y registro comparten el fondo y se presentan fuera de la interfaz interna.
+
+El inicio del catálogo está en `/inicio` y requiere sesión. Después de autenticarse se abre esa ruta o se recupera la página protegida solicitada. Si ya hay una sesión válida, la bienvenida sigue apareciendo en `/` y **Iniciar sesión** permite continuar a `/inicio` sin pedir otra contraseña. Las opciones de la barra lateral mantienen los permisos por cuenta.
+
+Fondo local: `public/welcome-city.jpg`, fotografía urbana de [Unsplash](https://images.unsplash.com/photo-1486406146926-c627a92ad1ab), ilustrativa y sin relación con una sede específica de TECBA. La capa morada se aplica con CSS. Respaldo previo: `1847fbf`, etiqueta `respaldo-antes-bienvenida`.
+
 ### Cuentas personales y cuentas de negocios
 
 Solo registro e inicio de sesión son vistas públicas. Al entrar sin sesión a una página protegida se abre el login; después se recupera la ruta y sus filtros. Las cuentas nuevas son personales. Inicio, Negocios, Videos y Promociones requieren sesión también en sus endpoints de datos. La expiración de la sesión vuelve a cerrar las vistas privadas y limpia el catálogo en memoria.
