@@ -259,3 +259,141 @@
     transition: none;
   }
 }
+
+/* Discovery belongs to the topbar; only business tools use a sidebar. */
+:root {
+  --app-header-height: 78px;
+}
+.topbar {
+  height: var(--app-header-height);
+  gap: 18px;
+}
+.topbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.topbar-tabs a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 10px;
+  border-radius: 8px;
+  color: #eee0ff;
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.topbar-tabs a svg {
+  width: 16px;
+  height: 16px;
+}
+.topbar-tabs a:hover {
+  background: #ffffff12;
+  color: white;
+}
+.topbar-tabs a.active {
+  color: white;
+  background: #ffffff22;
+  box-shadow: inset 0 -2px #dfc3ff;
+  font-weight: 700;
+}
+.topbar .topbar-search {
+  width: auto;
+  flex: 1;
+  max-width: 340px;
+  min-width: 100px;
+}
+.topbar .topbar-account {
+  max-width: 135px;
+  flex-shrink: 0;
+}
+.topbar-logout {
+  background: #ffffff12;
+  border: 1px solid #ffffff30;
+  padding: 7px 10px;
+}
+.app-content {
+  margin-top: var(--app-header-height);
+  min-height: calc(100vh - var(--app-header-height));
+}
+.app-content.personal-content {
+  margin-left: 0;
+}
+.sidebar {
+  top: var(--app-header-height);
+}
+.sidebar-backdrop {
+  top: var(--app-header-height);
+}
+.navigation-error {
+  position: fixed;
+  top: var(--app-header-height);
+  right: 15px;
+  z-index: 60;
+  padding: 14px;
+  background: white;
+  border: 1px solid #e6d2ef;
+  border-radius: 10px;
+}
+@media (max-width: 1100px) {
+  :root {
+    --app-header-height: 124px;
+  }
+  .topbar {
+    padding-bottom: 46px;
+  }
+  .topbar-tabs {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 46px;
+    border-top: 1px solid #ffffff20;
+    padding: 0 20px;
+    overflow-x: auto;
+  }
+  .topbar-tabs a {
+    padding: 11px 15px;
+    border-radius: 7px 7px 0 0;
+  }
+  .topbar .topbar-search {
+    max-width: 420px;
+  }
+}
+@media (max-width: 800px) {
+  :root {
+    --app-header-height: 116px;
+  }
+  .topbar {
+    gap: 12px;
+  }
+  .topbar-tabs {
+    padding-inline: 10px;
+    gap: 0;
+  }
+  .topbar-tabs a {
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 550px) {
+  .topbar .brand {
+    font-size: 18px;
+    gap: 8px;
+  }
+  .topbar .brand-symbol {
+    display: none;
+  }
+  .topbar .topbar-account {
+    max-width: 95px;
+  }
+  .topbar-tabs a {
+    gap: 5px;
+    padding-inline: 10px;
+  }
+  .topbar-tabs a svg {
+    width: 14px;
+  }
+}

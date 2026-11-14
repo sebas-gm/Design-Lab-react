@@ -12,6 +12,7 @@ const publicLinks = [
 ];
 const ownerLinks = [
   ["/dashboard", "Mi panel", "grid"],
+  ["/mi-cuenta", "Mi cuenta", "grid"],
   ["/administrar-negocios", "Mi negocio", "shop"],
   ["/administrar-productos", "Mis productos", "grid"],
   ["/administrar-promociones", "Mis promociones", "tag"],
@@ -46,6 +47,7 @@ function Icon({ name }) {
 
 export default function Navbar() {
   const { user, setUser } = useLab();
+  const business = user?.tipo_cuenta === "negocios";
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -84,16 +86,18 @@ export default function Navbar() {
   return (
     <>
       <header className="topbar">
-        <button
-          className="sidebar-toggle"
-          type="button"
-          aria-label={open ? "Cerrar menú" : "Abrir menú"}
-          aria-expanded={open}
-          aria-controls="sidebar"
-          onClick={() => setOpen(!open)}
-        >
-          ☰
-        </button>
+        {business && (
+          <button
+            className="sidebar-toggle"
+            type="button"
+            aria-label={open ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={open}
+            aria-controls="sidebar"
+            onClick={() => setOpen(!open)}
+          >
+            ☰
+          </button>
+        )}
         <Link to="/" className="brand">
           <span className="brand-symbol">
             D<span>•</span>
@@ -102,6 +106,11 @@ export default function Navbar() {
             Design Lab<small>Descubre lo que está cerca</small>
           </span>
         </Link>
+        {user && (
+          <nav className="topbar-tabs" aria-label="Explorar Design Lab">
+            {links(publicLinks)}
+          </nav>
+        )}
         <form className="topbar-search" role="search" onSubmit={search}>
           <input
             name="q"
@@ -114,67 +123,66 @@ export default function Navbar() {
           {user ? user.nombre : "Iniciar sesión"}{" "}
           <span aria-hidden="true">↗</span>
         </Link>
+        {user && !business && (
+          <button
+            className="topbar-logout"
+            onClick={logout}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            ↪
+          </button>
+        )}
       </header>
-      {open && (
+      {open && business && (
         <button
           className="sidebar-backdrop"
           aria-label="Cerrar menú"
           onClick={() => setOpen(false)}
         />
       )}
-      <aside id="sidebar" className={`sidebar ${open ? "is-open" : ""}`}>
-        <nav aria-label="Navegación principal">
-          <p className="sidebar-label">Descubrir</p>
-          {user && links(publicLinks)}
-          <p className="sidebar-label">
-            {user ? "Mi espacio" : "Únete a Design Lab"}
-          </p>
-          {user ? (
-            <>
-              {links([["/mi-cuenta", "Mi cuenta", "grid"]])}
-              {user.tipo_cuenta === "negocios"
-                ? links(ownerLinks)
-                : links([["/activar-negocio", "Registrar mi negocio", "shop"]])}
-            </>
-          ) : (
-            <>
-              {links([
-                ["/login", "Iniciar sesión", "grid"],
-                ["/registro", "Crear una cuenta", "plus"],
-              ])}
-            </>
-          )}
-        </nav>
-        <div className="sidebar-profile">
-          <span className="profile-avatar">
-            {user?.avatar ? (
-              <img src={user.avatar} alt="" />
-            ) : (
-              user?.nombre?.[0]?.toUpperCase() || "D"
+      {business && (
+        <aside id="sidebar" className={`sidebar ${open ? "is-open" : ""}`}>
+          <nav aria-label="Herramientas de tu negocio">
+            <p className="sidebar-label">Mi espacio de negocios</p>
+            {links(ownerLinks)}
+          </nav>
+          <div className="sidebar-profile">
+            <span className="profile-avatar">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" />
+              ) : (
+                user?.nombre?.[0]?.toUpperCase() || "D"
+              )}
+            </span>
+            <div>
+              <strong>{user?.nombre || "Tu comunidad local"}</strong>
+              <small>
+                {user
+                  ? user.tipo_cuenta === "negocios"
+                    ? "Cuenta de negocios"
+                    : "Cuenta personal"
+                  : "Cerca de TECBA"}
+              </small>
+            </div>
+            {user && (
+              <button
+                onClick={logout}
+                title="Cerrar sesión"
+                aria-label="Cerrar sesión"
+              >
+                ↪
+              </button>
             )}
-          </span>
-          <div>
-            <strong>{user?.nombre || "Tu comunidad local"}</strong>
-            <small>
-              {user
-                ? user.tipo_cuenta === "negocios"
-                  ? "Cuenta de negocios"
-                  : "Cuenta personal"
-                : "Cerca de TECBA"}
-            </small>
           </div>
-          {user && (
-            <button
-              onClick={logout}
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
-            >
-              ↪
-            </button>
-          )}
-        </div>
-        {error && <p role="alert">{error}</p>}
-      </aside>
+          {error && <p role="alert">{error}</p>}
+        </aside>
+      )}
+      {!business && error && (
+        <p className="navigation-error" role="alert">
+          {error}
+        </p>
+      )}
     </>
   );
 }

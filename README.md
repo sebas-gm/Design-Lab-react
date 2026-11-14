@@ -129,7 +129,9 @@ La restricción única `uq_business_owner` en MySQL impide crear dos negocios co
 
 El arranque de FastAPI y `python -m backend.init_db` aplican esta migración. Respaldo previo: `4e6142c`, etiqueta `respaldo-antes-tipos-cuenta`. La suite incluye registro personal, activación, validación fallida, protección del catálogo, separación de propietarios, migración de cuentas existentes e importación atómica.
 
-La navegación lateral reúne Inicio, Negocios, Videos y Promociones. Al iniciar sesión añade las opciones existentes de administración y **Mis videos**. En móvil se abre con el botón de menú; se cierra al elegir una opción, pulsar Escape o tocar fuera del menú. El buscador superior abre el catálogo con el texto consultado.
+Inicio, Negocios, Videos y Promociones se muestran en la barra superior para ambas cuentas, junto al buscador y el acceso a Mi cuenta. Las cuentas personales no tienen barra lateral y utilizan todo el ancho del contenido; pueden cerrar sesión desde la cabecera y activar su negocio desde Mi cuenta.
+
+La barra lateral es exclusiva de las cuentas de negocios: Mi panel, Mi cuenta, Mi negocio, Mis productos, Mis promociones y Mis videos. En móvil se abre con el botón de menú; se cierra al elegir una opción, pulsar Escape o tocar fuera del menú. Las pestañas de exploración permanecen en la cabecera, en una segunda fila desplazable en pantallas pequeñas. El buscador superior abre el catálogo con el texto consultado. Respaldo previo a esta separación: `b480258`, etiqueta `respaldo-antes-topbar-personal`.
 
 En **Mis videos**, el propietario selecciona uno de sus negocios e introduce título y enlace HTTPS. Puede editar o quitar sus enlaces. La pestaña pública **Videos** permite filtrar por negocio y cargar más resultados, en páginas de 12. El detalle del negocio también enlaza a sus videos.
 
