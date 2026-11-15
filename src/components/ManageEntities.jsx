@@ -14,6 +14,7 @@ export default function ManageEntities({ kind, promotions = false }) {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const mine = negocios.filter((n) => n.owner_id === user.id);
+  const archived = mine.some((n) => n.estado === "archivado");
   const items =
     kind === "negocios"
       ? mine
@@ -45,15 +46,17 @@ export default function ManageEntities({ kind, promotions = false }) {
     <main className={`administrar-${promotions ? "promociones" : kind}`}>
       <h1>Administrar {promotions ? "promociones" : kind}</h1>
       <p>Administra los registros que pertenecen a tu cuenta.</p>
-      {(kind !== "negocios" || !mine.length) && (
-        <Link
-          to={
-            kind === "negocios" ? "/registrar-negocio" : "/registrar-producto"
-          }
-        >
-          Agregar {kind === "negocios" ? "negocio" : "producto"}
-        </Link>
-      )}
+      {!archived &&
+        user.puede_registrar !== false &&
+        (kind !== "negocios" || !mine.length) && (
+          <Link
+            to={
+              kind === "negocios" ? "/registrar-negocio" : "/registrar-producto"
+            }
+          >
+            Agregar {kind === "negocios" ? "negocio" : "producto"}
+          </Link>
+        )}
       {kind === "negocios" && mine.length > 0 && (
         <p>
           Tu cuenta puede tener un solo negocio. Aquí puedes actualizar su
@@ -65,7 +68,7 @@ export default function ManageEntities({ kind, promotions = false }) {
       <div className="lista-negocios">
         {items.map((item) => (
           <article className="negocio-admin" key={item.id}>
-            {editing?.id === item.id ? (
+            {editing?.id === item.id && !archived ? (
               <EntityForm
                 kind={kind}
                 initial={item}
@@ -90,13 +93,16 @@ export default function ManageEntities({ kind, promotions = false }) {
                   <p>{item.promocion ? "En promoción" : "Sin promoción"}</p>
                 )}
                 {promotions ? (
-                  <button disabled={busy} onClick={() => mutate(item, true)}>
+                  <button
+                    disabled={busy || archived}
+                    onClick={() => mutate(item, true)}
+                  >
                     {item.promocion ? "Desactivar" : "Activar"} promoción
                   </button>
                 ) : (
-                  <>
+                  <div className="action-row">
                     <button
-                      disabled={busy}
+                      disabled={busy || archived}
                       onClick={async () => {
                         if (
                           await confirm(
@@ -109,10 +115,13 @@ export default function ManageEntities({ kind, promotions = false }) {
                     >
                       Editar
                     </button>
-                    <button disabled={busy} onClick={() => mutate(item, false)}>
+                    <button
+                      disabled={busy || archived}
+                      onClick={() => mutate(item, false)}
+                    >
                       Eliminar
                     </button>
-                  </>
+                  </div>
                 )}
               </>
             )}

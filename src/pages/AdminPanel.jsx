@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import { useConfirm } from "../confirmation";
 import EntityForm from "../components/EntityForm";
+import AdminDecision from "../components/AdminDecision";
 import "../styles/admin.css";
 
 function VideoEditor({ initial, businesses, onSaved, onCancel }) {
@@ -85,6 +86,7 @@ const empty = {
   productos: [],
   videos: [],
   historial: [],
+  solicitudes: [],
 };
 
 export default function AdminPanel() {
@@ -92,13 +94,21 @@ export default function AdminPanel() {
   const confirm = useConfirm();
   const [data, setData] = useState(empty);
   const [editor, setEditor] = useState(null);
+  const [decision, setDecision] = useState(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
-    const names = ["negocios", "usuarios", "productos", "videos", "historial"];
+    const names = [
+      "negocios",
+      "usuarios",
+      "productos",
+      "videos",
+      "historial",
+      "solicitudes",
+    ];
     const results = await Promise.all(
       names.map((name) => api(`/admin/${name}`)),
     );
@@ -112,7 +122,15 @@ export default function AdminPanel() {
       .then(load)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [load]);
+    const update = () => load().catch((e) => setError(e.message));
+    const timer =
+      section === "solicitudes" ? window.setInterval(update, 30000) : null;
+    window.addEventListener("focus", update);
+    return () => {
+      if (timer) clearInterval(timer);
+      window.removeEventListener("focus", update);
+    };
+  }, [load, section]);
   async function saved() {
     setEditor(null);
     await load();
@@ -130,29 +148,15 @@ export default function AdminPanel() {
     }
   }
   async function changeStatus(item, estado) {
-    if (
-      !(await confirm(
-        `El negocio “${item.nombre}” pasará a estado ${estado}. Sus datos y contenidos se conservarán.`,
-        "save",
-      ))
-    )
-      return;
-    setBusy(true);
-    setError("");
-    try {
-      await api(`/admin/negocios/${item.id}/estado`, {
-        method: "PATCH",
-        body: { estado },
-      });
-      await load();
-      setNotice("Estado actualizado.");
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
+    setDecision({ type: "status", item, estado });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   async function remove(kind, item) {
+    if (kind === "negocios") {
+      setDecision({ type: "delete", item });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     if (
       !(await confirm(
         `Se eliminará definitivamente “${item.nombre || item.titulo}”. Esta acción no se puede deshacer.`,
@@ -201,6 +205,7 @@ export default function AdminPanel() {
     usuarios: "Usuarios",
     contenido: "Contenido",
     historial: "Historial de administración",
+    solicitudes: "Solicitudes de propietarios",
   };
 
   return (
@@ -225,12 +230,14 @@ export default function AdminPanel() {
           ["usuarios", "Usuarios"],
           ["contenido", "Contenido"],
           ["historial", "Historial"],
+          ["solicitudes", "Solicitudes"],
         ].map(([path, label]) => (
           <Link
             key={path}
             className={section === path ? "active" : ""}
             onClick={() => {
               setEditor(null);
+              setDecision(null);
               setQuery("");
             }}
             to={`/admin${path ? `/${path}` : ""}`}
@@ -245,6 +252,18 @@ export default function AdminPanel() {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
+      {decision && (
+        <AdminDecision
+          key={`${decision.type}-${decision.item.id}-${decision.estado || decision.approve}`}
+          decision={decision}
+          onCancel={() => setDecision(null)}
+          onSaved={async () => {
+            setDecision(null);
+            await load();
+            setNotice("Decisión guardada y notificación enviada.");
+          }}
+        />
+      )}
       {loading ? (
         <p role="status">Cargando administración…</p>
       ) : (
@@ -384,6 +403,7 @@ export default function AdminPanel() {
                     <button
                       className="admin-delete"
                       disabled={busy || b.estado !== "archivado"}
+                      title={b.estado !== "archivado" ? "Archiva el negocio antes de eliminarlo definitivamente" : undefined}
                       onClick={() => remove("negocios", b)}
                     >
                       Borrado definitivo
@@ -403,6 +423,7 @@ export default function AdminPanel() {
                     <th>Correo</th>
                     <th>Cuenta</th>
                     <th>Negocio</th>
+                    <th>Registro de negocio</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -420,6 +441,27 @@ export default function AdminPanel() {
                         {u.negocio_id
                           ? businessName(u.negocio_id)
                           : "Sin negocio"}
+                      </td>
+                      <td>
+                        <div className="admin-permission-control">
+                          <span>
+                            {u.puede_registrar
+                              ? "Permitido"
+                              : "Requiere autorización"}
+                          </span>
+                          <button
+                            disabled={Boolean(u.puede_registrar && u.restriccion_bloqueada)}
+                            title={u.puede_registrar ? u.restriccion_bloqueada : undefined}
+                            onClick={() =>
+                              setDecision({ type: "permission", item: u })
+                            }
+                          >
+                            {u.puede_registrar ? "Restringir" : "Autorizar"}
+                          </button>
+                          {u.puede_registrar && u.restriccion_bloqueada && (
+                            <small>{u.restriccion_bloqueada}</small>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -492,6 +534,52 @@ export default function AdminPanel() {
                 ))}
               </div>
             </>
+          )}
+          {section === "solicitudes" && (
+            <div className="admin-list">
+              {data.solicitudes.map((r) => (
+                <article key={r.id}>
+                  <div>
+                    <span className="platform-badge">{r.estado}</span>
+                    <h3>{r.nombre_negocio}</h3>
+                    <p>{r.propietario}</p>
+                    <p>{r.mensaje}</p>
+                    {r.respuesta && (
+                      <p>
+                        <strong>Respuesta:</strong> {r.respuesta}
+                      </p>
+                    )}
+                  </div>
+                  {r.estado === "pendiente" && (
+                    <div className="admin-actions">
+                      <button
+                        onClick={() =>
+                          setDecision({
+                            type: "review",
+                            item: r,
+                            approve: true,
+                          })
+                        }
+                      >
+                        Aprobar
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDecision({
+                            type: "review",
+                            item: r,
+                            approve: false,
+                          })
+                        }
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  )}
+                </article>
+              ))}
+              {!data.solicitudes.length && <p>No hay solicitudes.</p>}
+            </div>
           )}
           {section === "historial" && (
             <>

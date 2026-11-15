@@ -181,8 +181,9 @@
   margin-top: 18px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
+.video-actions .secondary-button { margin-left: 0; }
 .video-actions button {
   font-size: 12px;
 }

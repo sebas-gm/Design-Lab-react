@@ -117,6 +117,26 @@ export default function Videos({ manage = false }) {
       setBusy(false);
     }
   }
+  if (manage && mine.some((n) => n.estado === "archivado"))
+    return (
+      <main className="videos-page">
+        <h1>Mis videos</h1>
+        <p>
+          Tu negocio está archivado. Puedes consultar los videos, pero no
+          modificarlos.
+        </p>
+        <Link to="/estado-negocio">Solicitar restauración</Link>
+        <div className="videos-grid">
+          {videos.map((video) => (
+            <VideoCard
+              key={video.id}
+              video={video}
+              nombreNegocio={mine.find((n) => n.id === video.negocioId)?.nombre}
+            />
+          ))}
+        </div>
+      </main>
+    );
   return (
     <main className="videos-page">
       <div className="page-heading">
@@ -185,7 +205,7 @@ export default function Videos({ manage = false }) {
               video abierto, no el enlace corto. Solo guardamos el enlace; el
               video permanece en su plataforma.
             </small>
-            <div>
+            <div className="action-row">
               <button disabled={busy}>
                 {busy
                   ? "Guardando…"

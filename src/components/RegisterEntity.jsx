@@ -1,9 +1,32 @@
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate, Link } from "react-router-dom";
 import EntityForm from "./EntityForm";
 import { useLab } from "../context";
 export default function RegisterEntity({ kind }) {
   const navigate = useNavigate();
   const { user, negocios, loading, error, refresh } = useLab();
+  if (kind === "negocios" && user.puede_registrar === false)
+    return (
+      <main className="registrar-negocio">
+        <h1>Registro pendiente de autorización</h1>
+        <p>
+          La administración debe autorizarte antes de registrar otro negocio.
+        </p>
+        <Link to="/estado-negocio">Ver decisión y solicitar autorización</Link>
+      </main>
+    );
+  if (
+    kind === "productos" &&
+    negocios.some((n) => n.owner_id === user.id && n.estado === "archivado")
+  )
+    return (
+      <main className="registrar-negocio">
+        <h1>Negocio archivado</h1>
+        <p>
+          El catálogo es de solo lectura hasta que se apruebe su restauración.
+        </p>
+        <Link to="/estado-negocio">Solicitar restauración</Link>
+      </main>
+    );
   if (kind === "negocios" && loading)
     return <main className="registrar-negocio">Comprobando tu negocio…</main>;
   if (kind === "negocios" && error)

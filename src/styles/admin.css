@@ -91,6 +91,9 @@
 .admin-list h3 {
   font-size: 17px;
 }
+.admin-list .platform-badge + h3 {
+  margin-top: 12px;
+}
 .admin-list p {
   font-size: 13px;
   line-height: 1.8;
@@ -104,8 +107,11 @@
 .admin-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
+.admin-permission-control { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; min-width: 170px; }
+.admin-permission-control > span { display: block; line-height: 1.6; }
+.admin-permission-control > button { margin: 0; font-size: 12px; padding: 10px 14px; }
 .admin-actions button {
   font-size: 12px;
   padding: 10px;

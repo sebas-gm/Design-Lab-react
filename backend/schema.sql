@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
 	avatar VARCHAR(2048) NOT NULL DEFAULT '',
 	reducir_movimiento BOOL NOT NULL DEFAULT '0',
 	is_admin BOOL NOT NULL DEFAULT '0',
+	puede_registrar BOOL NOT NULL DEFAULT '1',
 	PRIMARY KEY (id),
 	UNIQUE (correo)
 );
@@ -51,6 +52,30 @@ CREATE TABLE IF NOT EXISTS businesses (
 	FOREIGN KEY(owner_id) REFERENCES users (id)
 );
 
+CREATE TABLE IF NOT EXISTS moderation_events (
+	id INTEGER NOT NULL AUTO_INCREMENT,
+	user_id INTEGER NOT NULL,
+	negocio_id INTEGER NOT NULL,
+	nombre_negocio VARCHAR(120) NOT NULL,
+	estado VARCHAR(16) NOT NULL,
+	motivo TEXT NOT NULL,
+	nota_interna TEXT NOT NULL,
+	fecha DATETIME NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY(user_id) REFERENCES users (id)
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+	id INTEGER NOT NULL AUTO_INCREMENT,
+	user_id INTEGER NOT NULL,
+	titulo VARCHAR(160) NOT NULL,
+	mensaje TEXT NOT NULL,
+	fecha DATETIME NOT NULL,
+	leida BOOL NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY(user_id) REFERENCES users (id)
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
 	token_hash VARCHAR(64) NOT NULL,
 	user_id INTEGER NOT NULL,
@@ -71,6 +96,23 @@ CREATE TABLE IF NOT EXISTS products (
 	PRIMARY KEY (id),
 	UNIQUE (`negocioId`, legacy_id),
 	FOREIGN KEY(`negocioId`) REFERENCES businesses (id)
+);
+
+CREATE TABLE IF NOT EXISTS review_requests (
+	id INTEGER NOT NULL AUTO_INCREMENT,
+	user_id INTEGER NOT NULL,
+	negocio_id INTEGER NOT NULL,
+	evento_id INTEGER NOT NULL,
+	pending_key VARCHAR(80),
+	mensaje TEXT NOT NULL,
+	estado VARCHAR(16) NOT NULL,
+	respuesta TEXT NOT NULL,
+	fecha DATETIME NOT NULL,
+	resuelta DATETIME,
+	PRIMARY KEY (id),
+	FOREIGN KEY(user_id) REFERENCES users (id),
+	FOREIGN KEY(evento_id) REFERENCES moderation_events (id),
+	UNIQUE (pending_key)
 );
 
 CREATE TABLE IF NOT EXISTS videos (

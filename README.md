@@ -105,6 +105,24 @@ Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Pa
 
 ### Administración del sistema
 
+#### Moderación, avisos y revisión
+
+Al suspender, archivar, restaurar o eliminar un negocio, el superadmin debe escribir un **motivo visible para el propietario**. Puede añadir una **nota interna**, accesible únicamente desde administración. El formulario se abre en el panel y solicita confirmación antes de guardar la decisión.
+
+- **Suspendido:** oculto para otros usuarios; su propietario puede corregir el negocio y contenido y enviar una solicitud de revisión.
+- **Archivado:** oculto y de solo lectura para su propietario; puede solicitar restauración. El administrador conserva sus herramientas de gestión.
+- **Eliminado definitivamente:** se conserva la decisión en el historial del propietario, pero no el negocio borrado. La cuenta queda sin permiso de registrar o importar otro hasta recibir autorización. Puede pedirla desde **Estado y solicitudes**, o el superadmin puede concederla desde **Usuarios → Autorizar** con motivo obligatorio. Autorizar un registro nuevo no recupera el negocio eliminado ni permite tener más de uno.
+
+El propietario ve un aviso persistente en su espacio administrativo, la sección **Estado y solicitudes** y una campana de **Notificaciones**. Se actualizan al entrar, recuperar el foco y cada 30 segundos mientras la sesión está abierta; no se envían correos ni notificaciones push. Puede marcar cada aviso como leído y cargar notificaciones anteriores. La decisión, su motivo y las respuestas permanecen accesibles aunque el negocio ya no exista. El motivo original y la fecha se muestran en el historial. No se exponen notas internas a usuarios ordinarios.
+
+Solo se permite una solicitud pendiente por negocio/propietario, o una de autorización de registro por cuenta. El superadmin la aprueba o rechaza en **Solicitudes**, con respuesta obligatoria. Aprobar una revisión/restauración reactiva el negocio; aprobar una solicitud posterior a eliminación solo concede permiso para registrar otro. Rechazar conserva el estado y muestra la respuesta. Si cambia el estado o propietario mientras hay una solicitud pendiente, se cierra para evitar resolver una decisión obsoleta. Las autorizaciones manuales también cierran las solicitudes de permiso pendientes.
+
+Las tablas `moderation_events`, `review_requests` y `notifications` se guardan en MySQL. Los historiales conservan el identificador y el nombre del negocio como referencia, sin clave foránea que impida conservarlos tras un borrado. La restricción única de solicitudes pendientes y las verificaciones de propiedad se aplican en el backend. Ningún endpoint público permite cambiar el permiso `puede_registrar`.
+
+La migración `migrate_moderation` agrega el permiso de registro por defecto y registra una explicación para negocios previamente suspendidos o archivados que no tenían historial, sin inventar un motivo original. La fecha de esas entradas corresponde a su incorporación al historial. No reconstruye decisiones de negocios eliminados antes de esta función. El inicio de FastAPI o `python -m backend.init_db` aplica la migración sin borrar usuarios ni negocios. Respaldo previo: `0e1a937`, etiqueta `respaldo-antes-moderacion`.
+
+Validación: 24 pruebas de API aprobadas, incluida privacidad de notas, una sola solicitud pendiente, revisión rechazada/aprobada, archivo de solo lectura, solicitudes obsoletas, avisos privados y permisos tras eliminación. También pasan ESLint y la compilación. La revisión visual de este flujo queda pendiente en el navegador.
+
 El administrador del sistema es un permiso independiente (`users.is_admin`), adicional al tipo de cuenta personal o de negocios. Después de iniciar sesión entra a `/admin` y obtiene una barra lateral con Panel del sistema, Todos los negocios, Usuarios, Contenido, Historial y Mi cuenta. Puede explorar la plataforma con **Ver como cliente** y regresar a su panel. Las rutas de React y todos los endpoints `/api/admin/*` verifican el permiso; el registro y la edición de perfil nunca pueden concederlo.
 
 Para habilitar una cuenta **ya registrada**, desde una terminal local de confianza en `Proyecto React`:
@@ -118,7 +136,7 @@ Sustituye `CORREO_DE_LA_CUENTA` por el correo real. No se crean contraseñas ni 
 
 **Negocios:** crear y editar negocios asignando una cuenta propietaria registrada. Cada propietario sigue limitado a un negocio, incluso si la creación la realiza un administrador. La asignación activa el tipo de cuenta de negocios del propietario, no el del administrador. Se puede transferir la propiedad a otra cuenta sin negocio. El propietario anterior conserva su cuenta, pero pierde los permisos sobre ese negocio.
 
-**Estados:** `activo`, `suspendido`, `archivado`. Suspender o archivar oculta el negocio y sus productos/promociones/videos del catálogo para otros usuarios. Su propietario conserva acceso a los registros para corregir su información y ve el estado en el detalle. No puede reactivarlo ni eliminarlo para eludir la suspensión. Las URLs de imágenes ya publicadas siguen disponibles; cambiar el estado no elimina archivos.
+**Estados:** `activo`, `suspendido`, `archivado`. Suspender o archivar oculta el negocio y sus productos/promociones/videos del catálogo para otros usuarios. Su propietario puede corregir la información si está suspendido; si está archivado, conserva acceso de solo lectura. Ve el estado y motivo en su panel. No puede reactivarlo ni eliminarlo para eludir la suspensión. Las URLs de imágenes ya publicadas siguen disponibles; cambiar el estado no elimina archivos.
 
 **Borrado definitivo:** solo desde administración, después de archivar el negocio y retirar sus productos y enlaces de video. No hay borrado en cascada ni eliminación de imágenes. Archivar permite conservar todo y restaurarlo después.
 
@@ -181,3 +199,5 @@ Reproductores utilizados: [YouTube](https://developers.google.com/youtube/player
 React se ejecuta directamente desde `Proyecto React`: `src/`, `public/`, `package.json` y `vite.config.js` están en la raíz. FastAPI permanece en `backend/`. Ejecuta `npm.cmd run dev` en la raíz e inicia FastAPI en otra terminal situada en esa misma carpeta.
 
 Respaldo anterior al traslado: commit `6685ab8`, etiqueta `respaldo-antes-unificar`. Los archivos Node que antes estaban en la raíz y el README/gitignore anterior del frontend se conservan en `.reorganization-backup/`, excluida de Git. La configuración de MySQL sigue en `backend/.env`.
+
+Protección administrativa: ningún superadmin puede restringir su propio permiso de registro, tampoco mediante la eliminación administrativa de su negocio (puede mantenerlo archivado). Usuarios deshabilita ese control y la API rechaza el intento sin guardar cambios. Se protege también al último administrador frente a restricciones. El rol administrativo no puede retirarse ni la cuenta eliminarse mediante la API o la interfaz; el comando local de administración únicamente concede el rol.

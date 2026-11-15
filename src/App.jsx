@@ -1,5 +1,7 @@
 import AppLayout from "./components/AppLayout";
 import AdminPanel from "./pages/AdminPanel";
+import BusinessStatus from "./pages/BusinessStatus";
+import Notifications from "./pages/Notifications";
 import ConfirmationProvider from "./components/ConfirmationProvider";
 import Welcome from "./pages/Welcome";
 import LabProvider from "./components/LabProvider";
@@ -57,6 +59,8 @@ function App() {
                 }
               >
                 <Route path="/mi-cuenta" element={<MiCuenta />} />
+                <Route path="/estado-negocio" element={<BusinessStatus />} />
+                <Route path="/notificaciones" element={<Notifications />} />
                 <Route
                   path="/admin/*"
                   element={

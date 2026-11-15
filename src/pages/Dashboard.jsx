@@ -26,7 +26,7 @@ function Dashboard() {
           <h2>Mi negocio</h2>
           <p>Administra la información de tu único negocio.</p>
 
-          {!hasBusiness && (
+          {!hasBusiness && user.puede_registrar !== false && (
             <Link to="/registrar-negocio">
               <button>Registrar negocio</button>
             </Link>

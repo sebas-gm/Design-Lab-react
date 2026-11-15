@@ -286,8 +286,9 @@
 .profile-form-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
+.profile-form-actions .secondary-button { margin-left: 0; }
 .profile-feedback {
   padding: 15px 20px;
   border: 1px solid #e3d2f5;

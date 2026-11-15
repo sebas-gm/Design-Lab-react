@@ -7,7 +7,7 @@ from sqlalchemy import URL, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.database import Base, make_engine
-from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin
+from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin, migrate_moderation
 import backend.models  # noqa: F401 - register tables before create_all
 
 
@@ -35,6 +35,7 @@ def main():
         migrate_single_business(engine)
         migrate_profile(engine)
         migrate_admin(engine)
+        migrate_moderation(engine)
         with engine.connect() as connection:
             connection.execute(text('SELECT 1'))
         engine.dispose()

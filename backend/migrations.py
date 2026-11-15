@@ -55,3 +55,16 @@ def migrate_admin(engine):
             connection.execute(text('ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0'))
         if 'estado' not in {column['name'] for column in inspector.get_columns('businesses')}:
             connection.execute(text("ALTER TABLE businesses ADD COLUMN estado VARCHAR(16) NOT NULL DEFAULT 'activo'"))
+
+
+def migrate_moderation(engine):
+    with engine.begin() as connection:
+        if 'puede_registrar' not in {c['name'] for c in inspect(engine).get_columns('users')}:
+            connection.execute(text('ALTER TABLE users ADD COLUMN puede_registrar BOOLEAN NOT NULL DEFAULT 1'))
+        # Keep a visible explanation for pre-existing suspended/archived businesses.
+        connection.execute(text("""INSERT INTO moderation_events
+            (user_id, negocio_id, nombre_negocio, estado, motivo, nota_interna, fecha)
+            SELECT b.owner_id, b.id, b.nombre, b.estado,
+            'Estado aplicado antes del historial de moderación. Solicita revisión para consultar tu caso.', '', CURRENT_TIMESTAMP
+            FROM businesses b WHERE b.estado <> 'activo'
+            AND NOT EXISTS (SELECT 1 FROM moderation_events m WHERE m.negocio_id = b.id)"""))

@@ -9,6 +9,9 @@ export default function LabProvider({ children }) {
   const [productos, setProductos] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [moderation, setModeration] = useState(null);
+  const [moderationError, setModerationError] = useState("");
+  const [notificationCount, setNotificationCount] = useState(0);
   const generation = useRef(0);
   const userId = user?.id;
 
@@ -17,6 +20,9 @@ export default function LabProvider({ children }) {
     setUser(value);
     setLoading(false);
     if (!value) {
+      setModeration(null);
+      setModerationError("");
+      setNotificationCount(0);
       setNegocios([]);
       setProductos([]);
       setError("");
@@ -38,6 +44,7 @@ export default function LabProvider({ children }) {
       setProductos(products);
       setUser(account);
       setError("");
+      window.dispatchEvent(new Event("navishop:moderation-changed"));
     } catch (e) {
       if (request === generation.current) setError(e.message);
     } finally {
@@ -70,6 +77,44 @@ export default function LabProvider({ children }) {
   }, [userId, refresh]);
 
   useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    const update = () => {
+      const token = generation.current;
+      return Promise.all([
+        api("/mi-moderacion"),
+        api("/notificaciones"),
+        api("/auth/me"),
+      ])
+        .then(([state, notices, account]) => {
+          if (!active || token !== generation.current) return;
+          setModerationError("");
+          setModeration(state);
+          setNotificationCount(notices.no_leidas);
+          setUser(account);
+          setNegocios((previous) => {
+            const others = previous.filter((b) => b.owner_id !== userId);
+            return state.negocio ? [state.negocio, ...others] : others;
+          });
+        })
+        .catch((e) => {
+          if (active && token === generation.current)
+            setModerationError(e.message);
+        });
+    };
+    Promise.resolve().then(update);
+    const timer = window.setInterval(update, 30000);
+    window.addEventListener("focus", update);
+    window.addEventListener("navishop:moderation-changed", update);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", update);
+      window.removeEventListener("navishop:moderation-changed", update);
+    };
+  }, [userId]);
+
+  useEffect(() => {
     document.documentElement.classList.toggle(
       "reduce-motion",
       Boolean(user?.reducir_movimiento),
@@ -88,6 +133,9 @@ export default function LabProvider({ children }) {
         refresh,
         error,
         loading,
+        moderation,
+        moderationError,
+        notificationCount,
       }}
     >
       {children}

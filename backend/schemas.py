@@ -108,3 +108,24 @@ class AdminBusinessIn(BusinessIn):
 
 class BusinessStatus(Input):
     estado: Literal['activo', 'suspendido', 'archivado']
+    motivo: str = Field(min_length=5, max_length=2000)
+    nota_interna: str = Field(default='', max_length=2000)
+
+
+class ModerationReason(Input):
+    motivo: str = Field(min_length=5, max_length=2000)
+    nota_interna: str = Field(default='', max_length=2000)
+
+
+class ReviewIn(Input):
+    mensaje: str = Field(min_length=10, max_length=3000)
+
+
+class ReviewDecision(Input):
+    decision: Literal['aprobar', 'rechazar']
+    respuesta: str = Field(min_length=5, max_length=2000)
+
+
+class RegistrationPermission(Input):
+    permitir: bool
+    motivo: str = Field(min_length=5, max_length=2000)

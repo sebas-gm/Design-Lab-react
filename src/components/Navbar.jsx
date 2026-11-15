@@ -19,6 +19,7 @@ const ownerLinks = [
   ["/administrar-productos", "Mis productos", "grid"],
   ["/administrar-promociones", "Mis promociones", "tag"],
   ["/administrar-videos", "Mis videos", "play"],
+  ["/estado-negocio", "Estado y solicitudes", "shop"],
 ];
 const adminLinks = [
   ["/admin", "Panel del sistema", "grid"],
@@ -26,6 +27,7 @@ const adminLinks = [
   ["/admin/usuarios", "Usuarios", "user"],
   ["/admin/contenido", "Contenido", "play"],
   ["/admin/historial", "Historial", "grid"],
+  ["/admin/solicitudes", "Solicitudes", "grid"],
   ["/mi-cuenta", "Mi cuenta", "user"],
 ];
 
@@ -58,7 +60,7 @@ function Icon({ name }) {
 
 export default function Navbar() {
   const confirm = useConfirm();
-  const { user, setUser } = useLab();
+  const { user, setUser, notificationCount = 0 } = useLab();
   const business = user?.is_admin || user?.tipo_cuenta === "negocios";
   const { pathname } = useLocation();
   const clientView = isClientView(user, pathname);
@@ -158,6 +160,27 @@ export default function Navbar() {
           >
             {clientView ? "Volver a mi panel" : "Ver como cliente"}{" "}
             <span aria-hidden="true">↗</span>
+          </Link>
+        )}
+        {user && (!business || workspace) && (
+          <Link
+            className="notification-link"
+            to="/notificaciones"
+            aria-label={`Notificaciones: ${notificationCount} sin leer`}
+            title="Notificaciones"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+            </svg>
+            {notificationCount > 0 && (
+              <span>{notificationCount > 99 ? "99+" : notificationCount}</span>
+            )}
           </Link>
         )}
         {!(business && clientView) && (

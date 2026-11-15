@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import CatalogStatus from "./CatalogStatus";
+import BusinessNotice from "./BusinessNotice";
 import { useLab } from "../context";
 import { isClientView } from "../navigation";
 import "../styles/welcome.css";
@@ -30,6 +31,7 @@ export default function AppLayout() {
         className={`app-content ${workspace ? "business-content" : "personal-content"}`}
       >
         <CatalogStatus />
+        {workspace && <BusinessNotice />}
         <Outlet />
         <Footer />
       </div>

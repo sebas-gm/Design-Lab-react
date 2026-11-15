@@ -14,7 +14,7 @@ from backend.models import Business, Product, Session, User, Video
 from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn, ProfileUpdate
 from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
-from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin
+from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin, migrate_moderation
 from backend.uploads import UPLOAD_DIR, save_image
 
 engine = make_engine()
@@ -31,6 +31,7 @@ async def lifespan(app):
     migrate_single_business(engine)
     migrate_profile(engine)
     migrate_admin(engine)
+    migrate_moderation(engine)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
@@ -69,7 +70,7 @@ def current_user(request: Request, db=Depends(get_db)):
 
 
 def public_user(user):
-    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta, 'avatar': user.avatar, 'reducir_movimiento': user.reducir_movimiento, 'is_admin': user.is_admin}
+    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta, 'avatar': user.avatar, 'reducir_movimiento': user.reducir_movimiento, 'is_admin': user.is_admin, 'puede_registrar': user.puede_registrar}
 
 
 def business_user(user=Depends(current_user)):
@@ -89,6 +90,8 @@ def owned(db, business_id, user):
         raise HTTPException(404, 'Negocio no encontrado')
     if business.owner_id != user.id:
         raise HTTPException(403, 'No tienes permiso sobre este negocio')
+    if business.estado == 'archivado':
+        raise HTTPException(403, 'Tu negocio está archivado y es de solo lectura. Solicita restauración desde Estado y solicitudes.')
     return business
 
 
@@ -179,6 +182,9 @@ def products(user=Depends(current_user), db=Depends(get_db)):
 @app.post('/api/negocios', status_code=201)
 def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
     db.scalar(select(User).where(User.id == user.id).with_for_update())
+    db.refresh(user)
+    if not user.puede_registrar:
+        raise HTTPException(403, 'Tu cuenta necesita autorización administrativa para registrar otro negocio. Consulta Estado y solicitudes.')
     if db.scalar(select(Business.id).where(Business.owner_id == user.id).with_for_update()):
         raise HTTPException(409, 'Tu cuenta ya tiene un negocio. Puedes editarlo desde Mi negocio.')
     item = Business(**data.model_dump(), owner_id=user.id)
@@ -261,6 +267,9 @@ def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_d
     if len(data.negocios) > 1:
         raise HTTPException(422, 'Cada cuenta solo puede tener un negocio. Selecciona uno para importar; los demás se conservarán en el navegador.')
     db.scalar(select(User).where(User.id == user.id).with_for_update())
+    db.refresh(user)
+    if not user.puede_registrar:
+        raise HTTPException(403, 'Tu cuenta necesita autorización para registrar o importar un negocio')
     existing = db.scalar(select(Business).where(Business.owner_id == user.id).with_for_update())
     if data.negocios and existing and existing.legacy_id != str(data.negocios[0].id):
         raise HTTPException(409, 'Tu cuenta ya tiene un negocio. No se importará otro ni se reemplazará el actual.')
@@ -339,6 +348,8 @@ def delete_video(item_id: int, user=Depends(current_user), db=Depends(get_db)):
 
 
 # Public images of businesses/products; writes always require authentication.
+from backend.moderation import router as moderation_router
+app.include_router(moderation_router)
 from backend.admin import router as admin_router
 app.include_router(admin_router)
 app.mount('/api/uploads', StaticFiles(directory=UPLOAD_DIR, check_dir=False), name='uploads')

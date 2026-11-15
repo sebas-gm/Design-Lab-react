@@ -12,6 +12,7 @@ class User(Base):
     avatar = Column(String(2048), nullable=False, default='', server_default='')
     reducir_movimiento = Column(Boolean, nullable=False, default=False, server_default='0')
     is_admin = Column(Boolean, nullable=False, default=False, server_default='0')
+    puede_registrar = Column(Boolean, nullable=False, default=True, server_default='1')
 
 
 class Session(Base):
@@ -73,3 +74,39 @@ class AuditLog(Base):
     recurso_id = Column(Integer, nullable=False)
     fecha = Column(DateTime, nullable=False)
     detalle = Column(Text, nullable=False)
+
+
+class ModerationEvent(Base):
+    __tablename__ = 'moderation_events'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(ForeignKey('users.id'), nullable=False, index=True)
+    negocio_id = Column(Integer, nullable=False, index=True)
+    nombre_negocio = Column(String(120), nullable=False)
+    estado = Column(String(16), nullable=False)
+    motivo = Column(Text, nullable=False)
+    nota_interna = Column(Text, nullable=False, default='')
+    fecha = Column(DateTime, nullable=False)
+
+
+class ReviewRequest(Base):
+    __tablename__ = 'review_requests'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(ForeignKey('users.id'), nullable=False, index=True)
+    negocio_id = Column(Integer, nullable=False, index=True)
+    evento_id = Column(ForeignKey('moderation_events.id'), nullable=False)
+    pending_key = Column(String(80), unique=True, nullable=True)
+    mensaje = Column(Text, nullable=False)
+    estado = Column(String(16), nullable=False, default='pendiente')
+    respuesta = Column(Text, nullable=False, default='')
+    fecha = Column(DateTime, nullable=False)
+    resuelta = Column(DateTime, nullable=True)
+
+
+class Notification(Base):
+    __tablename__ = 'notifications'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(ForeignKey('users.id'), nullable=False, index=True)
+    titulo = Column(String(160), nullable=False)
+    mensaje = Column(Text, nullable=False)
+    fecha = Column(DateTime, nullable=False)
+    leida = Column(Boolean, nullable=False, default=False)

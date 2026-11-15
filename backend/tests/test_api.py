@@ -363,7 +363,7 @@ def test_system_admin_permissions_visibility_and_audit(clients):
     vid = v.json()['id']
     assert admin.put(f'/api/admin/productos/{pid}', json={**product, 'precio': 12}).status_code == 200
     assert admin.patch(f'/api/admin/productos/{pid}/promocion', json={'promocion': True}).json()['promocion'] is True
-    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'suspendido'}).status_code == 200
+    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'suspendido', 'motivo': 'Motivo de prueba administrativa'}).status_code == 200
     # An unrelated account cannot see the suspended business or its content.
     assert admin.get('/api/negocios').json() == []
     assert admin.get('/api/productos').json() == []
@@ -372,14 +372,14 @@ def test_system_admin_permissions_visibility_and_audit(clients):
     assert len(owner.get('/api/negocios').json()) == 1
     assert owner.delete(f'/api/negocios/{business_id}').status_code == 403
     assert owner.put(f'/api/negocios/{business_id}', json={**BUSINESS, 'estado': 'activo'}).status_code == 422
-    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'activo'}).status_code == 200
+    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'activo', 'motivo': 'Motivo de prueba administrativa'}).status_code == 200
     assert len(admin.get('/api/negocios').json()) == 1
-    assert admin.delete(f'/api/admin/negocios/{business_id}').status_code == 409
-    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'archivado'}).status_code == 200
-    assert admin.delete(f'/api/admin/negocios/{business_id}').status_code == 409
+    assert admin.request('DELETE', f'/api/admin/negocios/{business_id}', json={'motivo': 'Eliminacion administrativa de prueba'}).status_code == 409
+    assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'archivado', 'motivo': 'Motivo de prueba administrativa'}).status_code == 200
+    assert admin.request('DELETE', f'/api/admin/negocios/{business_id}', json={'motivo': 'Eliminacion administrativa de prueba'}).status_code == 409
     assert admin.delete(f'/api/admin/productos/{pid}').status_code == 204
     assert admin.delete(f'/api/admin/videos/{vid}').status_code == 204
-    assert admin.delete(f'/api/admin/negocios/{business_id}').status_code == 204
+    assert admin.request('DELETE', f'/api/admin/negocios/{business_id}', json={'motivo': 'Eliminacion administrativa de prueba'}).status_code == 204
     logs = admin.get('/api/admin/historial').json()
     assert len(logs) >= 10
     assert any(log['accion'] == 'eliminar' and log['recurso'] == 'negocio' for log in logs)
@@ -408,3 +408,158 @@ def test_admin_ownership_transfer_and_local_provisioning(clients, monkeypatch):
     assert moved.status_code == 200, moved.text
     assert owner.put(f"/api/negocios/{business['id']}", json=BUSINESS).status_code == 403
     assert admin.get('/api/admin/historial').json()
+
+
+def make_admin(client):
+    from sqlalchemy.orm import Session
+    from sqlalchemy import select
+    from backend.models import User
+    account = signup(client, 'moderator@example.com').json()
+    with Session(engine) as db:
+        db.get(User, account['id']).is_admin = True
+        db.commit()
+
+
+def test_moderation_reasons_reviews_and_private_notes(clients):
+    admin, owner = clients
+    make_admin(admin)
+    signup(owner, 'moderation-owner@example.com')
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    path = f'/api/admin/negocios/{bid}/estado'
+    assert admin.patch(path, json={'estado': 'suspendido'}).status_code == 422
+    assert admin.patch(path, json={'estado': 'suspendido', 'motivo': 'Corrige los horarios publicados.', 'nota_interna': 'NOTA_PRIVADA_DE_ADMIN'}).status_code == 200
+    state = owner.get('/api/mi-moderacion')
+    assert state.json()['historial'][0]['motivo'] == 'Corrige los horarios publicados.'
+    assert 'NOTA_PRIVADA' not in state.text and 'nota_interna' not in state.text
+    assert admin.get('/api/mi-moderacion').json()['historial'] == []
+    assert owner.put(f'/api/negocios/{bid}', json=BUSINESS).status_code == 200
+    request = owner.post(f'/api/negocios/{bid}/solicitudes', json={'mensaje': 'Ya corregí los horarios de mi negocio.'})
+    assert request.status_code == 201, request.text
+    rid = request.json()['id']
+    assert owner.post(f'/api/negocios/{bid}/solicitudes', json={'mensaje': 'Otra solicitud duplicada.'}).status_code == 409
+    assert admin.post(f'/api/negocios/{bid}/solicitudes', json={'mensaje': 'No es mi negocio.'}).status_code == 404
+    assert owner.get('/api/admin/solicitudes').status_code == 403
+    assert 'NOTA_PRIVADA_DE_ADMIN' in admin.get('/api/admin/solicitudes').text
+    assert owner.patch(f'/api/admin/solicitudes/{rid}', json={'decision': 'aprobar', 'respuesta': 'Respuesta falsa.'}).status_code == 403
+    assert admin.patch(f'/api/admin/solicitudes/{rid}', json={'decision': 'rechazar', 'respuesta': 'Falta corregir el horario de cierre.'}).status_code == 200
+    assert owner.get('/api/mi-moderacion').json()['solicitudes'][0]['estado'] == 'rechazada'
+    assert owner.get('/api/mi-moderacion').json()['negocio']['estado'] == 'suspendido'
+    retry = owner.post(f'/api/negocios/{bid}/solicitudes', json={'mensaje': 'Ahora corregí también el horario de cierre.'})
+    assert retry.status_code == 201
+    assert admin.patch(f"/api/admin/solicitudes/{retry.json()['id']}", json={'decision': 'aprobar', 'respuesta': 'La corrección está completa.'}).status_code == 200
+    assert owner.get('/api/mi-moderacion').json()['negocio']['estado'] == 'activo'
+    notices = owner.get('/api/notificaciones').json()
+    assert notices['no_leidas'] >= 3
+    nid = notices['items'][0]['id']
+    assert admin.patch(f'/api/notificaciones/{nid}/leida').status_code == 404
+    assert owner.patch(f'/api/notificaciones/{nid}/leida').status_code == 204
+    assert owner.get('/api/notificaciones').json()['no_leidas'] == notices['no_leidas'] - 1
+
+
+def test_archived_readonly_stale_reviews_and_deletion_authorization(clients):
+    admin, owner = clients
+    make_admin(admin)
+    signup(owner, 'archived-owner@example.com')
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    path = f'/api/admin/negocios/{bid}/estado'
+    assert admin.patch(path, json={'estado': 'suspendido', 'motivo': 'Corregir información.'}).status_code == 200
+    rid = owner.post(f'/api/negocios/{bid}/solicitudes', json={'mensaje': 'Solicito revisar la información.'}).json()['id']
+    assert admin.patch(path, json={'estado': 'archivado', 'motivo': 'El negocio dejó de operar.'}).status_code == 200
+    assert owner.get('/api/mi-moderacion').json()['solicitudes'][0]['estado'] == 'cerrada'
+    assert admin.patch(f'/api/admin/solicitudes/{rid}', json={'decision': 'aprobar', 'respuesta': 'Una respuesta tardía.'}).status_code == 409
+    assert owner.put(f'/api/negocios/{bid}', json=BUSINESS).status_code == 403
+    assert owner.post('/api/productos', json={'negocioId': bid, 'nombre': 'Otro', 'precio': 1, 'descripcion': 'Prueba'}).status_code == 403
+    restore = owner.post(f'/api/negocios/{bid}/solicitudes', json={'mensaje': 'Quiero volver a abrir mi negocio.'})
+    assert restore.status_code == 201
+    assert admin.patch(f"/api/admin/solicitudes/{restore.json()['id']}", json={'decision': 'aprobar', 'respuesta': 'Restauración autorizada.'}).status_code == 200
+    assert owner.put(f'/api/negocios/{bid}', json=BUSINESS).status_code == 200
+    admin.patch(path, json={'estado': 'archivado', 'motivo': 'Se procederá a la eliminación.'})
+    deleted = admin.request('DELETE', f'/api/admin/negocios/{bid}', json={'motivo': 'El negocio fue eliminado por cierre definitivo.', 'nota_interna': 'SECRETO_INTERNO'})
+    assert deleted.status_code == 204, deleted.text
+    state = owner.get('/api/mi-moderacion')
+    assert state.json()['negocio'] is None
+    assert state.json()['historial'][0]['estado'] == 'eliminado'
+    assert state.json()['puede_registrar'] is False
+    assert 'SECRETO' not in state.text
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 403
+    assert owner.post('/api/importar', json={'negocios': [{**BUSINESS, 'id': 1}], 'productos': []}).status_code == 403
+    permission = owner.post('/api/mi-moderacion/contacto', json={'mensaje': 'Solicito autorización para registrar otro emprendimiento.'})
+    assert permission.status_code == 201
+    assert owner.post('/api/mi-moderacion/contacto', json={'mensaje': 'Otra solicitud de autorización.'}).status_code == 409
+    assert admin.patch(f"/api/admin/solicitudes/{permission.json()['id']}", json={'decision': 'aprobar', 'respuesta': 'Puedes registrar un nuevo negocio.'}).status_code == 200
+    assert owner.get('/api/auth/me').json()['puede_registrar'] is True
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 201
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 409
+    assert any(e['estado'] == 'eliminado' for e in owner.get('/api/mi-moderacion').json()['historial'])
+    assert owner.patch('/api/auth/profile', json={'puede_registrar': True}).status_code == 422
+
+
+def test_admin_registration_permission_and_contact(clients):
+    admin, owner = clients
+    make_admin(admin)
+    uid = signup(owner, 'permission-owner@example.com').json()['id']
+    path = f'/api/admin/usuarios/{uid}/registro-negocio'
+    assert owner.patch(path, json={'permitir': True, 'motivo': 'Auto autorización falsa.'}).status_code == 403
+    assert admin.patch(path, json={'permitir': False}).status_code == 422
+    assert admin.patch(path, json={'permitir': False, 'motivo': 'Verificación de identidad pendiente.'}).status_code == 200
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 403
+    request = owner.post('/api/mi-moderacion/contacto', json={'mensaje': 'Solicito completar la verificación para registrar mi negocio.'})
+    assert request.status_code == 201, request.text
+    assert admin.get('/api/admin/solicitudes').json()[0]['tipo_solicitud'] == 'registro'
+    assert admin.patch(path, json={'permitir': True, 'motivo': 'Identidad verificada por administración.'}).status_code == 200
+    assert owner.get('/api/mi-moderacion').json()['solicitudes'][0]['estado'] == 'cerrada'
+    assert admin.patch(f"/api/admin/solicitudes/{request.json()['id']}", json={'decision': 'aprobar', 'respuesta': 'Solicitud ya cerrada.'}).status_code == 409
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 201
+
+
+def test_admin_cannot_restrict_itself_even_through_business_deletion(clients):
+    admin, other = clients
+    make_admin(admin)
+    account = admin.get('/api/auth/me').json()
+    uid = account['id']
+    path = f'/api/admin/usuarios/{uid}/registro-negocio'
+    before = admin.get('/api/admin/historial').json()
+    notices = admin.get('/api/notificaciones').json()
+    response = admin.patch(path, json={'permitir': False, 'motivo': 'Intento de restringir mi propia cuenta.'})
+    assert response.status_code == 409
+    assert 'propia cuenta' in response.json()['detail']
+    assert admin.get('/api/auth/me').json()['puede_registrar'] is True
+    assert admin.get('/api/admin/historial').json() == before
+    assert admin.get('/api/notificaciones').json() == notices
+    row = next(u for u in admin.get('/api/admin/usuarios').json() if u['id'] == uid)
+    assert row['restriccion_bloqueada']
+    bid = admin.post('/api/negocios', json=BUSINESS).json()['id']
+    assert admin.patch(f'/api/admin/negocios/{bid}/estado', json={'estado': 'archivado', 'motivo': 'Negocio propio archivado.'}).status_code == 200
+    assert admin.request('DELETE', f'/api/admin/negocios/{bid}', json={'motivo': 'Intento de eliminar mi negocio.'}).status_code == 409
+    assert admin.get('/api/mi-moderacion').json()['negocio']['id'] == bid
+    assert admin.get('/api/auth/me').json()['is_admin'] is True
+    assert admin.patch('/api/auth/profile', json={'is_admin': False}).status_code == 422
+    assert signup(other, 'second-admin@example.com').status_code == 201
+    from sqlalchemy.orm import Session
+    from backend.models import User
+    with Session(engine) as db:
+        db.get(User, other.get('/api/auth/me').json()['id']).is_admin = True
+        db.commit()
+    # Another administrator may moderate this account, but never remove its role.
+    assert other.patch(path, json={'permitir': False, 'motivo': 'Restricción aplicada por otro administrador.'}).status_code == 200
+    assert admin.get('/api/auth/me').json()['is_admin'] is True
+    assert admin.patch(path, json={'permitir': False, 'motivo': 'Sigue siendo una autorrestricción.'}).status_code == 409
+
+
+def test_moderation_migration_preserves_existing_records():
+    from sqlalchemy import create_engine, text
+    from backend.migrations import migrate_moderation
+    isolated = create_engine('sqlite://')
+    with isolated.begin() as db:
+        db.execute(text('CREATE TABLE users (id INTEGER PRIMARY KEY)'))
+        db.execute(text('CREATE TABLE businesses (id INTEGER PRIMARY KEY, owner_id INTEGER, nombre TEXT, estado TEXT)'))
+        db.execute(text('CREATE TABLE moderation_events (id INTEGER PRIMARY KEY, user_id INTEGER, negocio_id INTEGER, nombre_negocio TEXT, estado TEXT, motivo TEXT, nota_interna TEXT, fecha DATETIME)'))
+        db.execute(text('INSERT INTO users VALUES (1)'))
+        db.execute(text("INSERT INTO businesses VALUES (1,1,'Anterior','suspendido')"))
+    migrate_moderation(isolated)
+    migrate_moderation(isolated)
+    with isolated.connect() as db:
+        assert db.scalar(text('SELECT COUNT(*) FROM moderation_events')) == 1
+        assert db.scalar(text('SELECT COUNT(*) FROM businesses')) == 1
+        assert db.scalar(text('SELECT puede_registrar FROM users')) == 1
+    isolated.dispose()
