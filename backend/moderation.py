@@ -37,6 +37,7 @@ def my_moderation(user=Depends(current_user), db=Depends(get_db)):
     requests = db.scalars(select(ReviewRequest).where(ReviewRequest.user_id == user.id).order_by(ReviewRequest.id.desc())).all()
     business = db.scalar(select(Business).where(Business.owner_id == user.id))
     return {'negocio': serialize(business) if business else None, 'puede_registrar': user.puede_registrar,
+            'registro_disponible_desde': user.registro_disponible_desde,
             'historial': [{k: getattr(event, k) for k in ('id', 'negocio_id', 'nombre_negocio', 'estado', 'motivo', 'fecha')} for event in events],
             'solicitudes': [{k: v for k, v in serialize(request).items() if k not in ('pending_key', 'user_id')} for request in requests]}
 

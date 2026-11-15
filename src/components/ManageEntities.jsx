@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useLab } from "../context";
 import EntityForm from "./EntityForm";
@@ -8,6 +8,7 @@ import "../styles/administrarNegocios.css";
 import "../styles/administrarProductos.css";
 import "../styles/administrarPromociones.css";
 export default function ManageEntities({ kind, promotions = false }) {
+  const navigate = useNavigate();
   const confirm = useConfirm();
   const { user, negocios, productos, refresh } = useLab();
   const [editing, setEditing] = useState(null),
@@ -23,7 +24,7 @@ export default function ManageEntities({ kind, promotions = false }) {
     if (
       !promotion &&
       !(await confirm(
-        `Se eliminará “${item.nombre}”. Esta acción no se puede deshacer.`,
+        `Se eliminará “${item.nombre}”. Esta acción no se puede deshacer.${kind === "negocios" ? " Tu cuenta volverá a ser personal y deberás esperar 15 días para registrar otro negocio." : ""}`,
         "delete",
       ))
     )
@@ -35,6 +36,7 @@ export default function ManageEntities({ kind, promotions = false }) {
         method: promotion ? "PATCH" : "DELETE",
         ...(promotion ? { body: { promocion: !item.promocion } } : {}),
       });
+      if (kind === "negocios" && !promotion) navigate("/inicio", { replace: true });
       await refresh();
     } catch (e) {
       setError(e.message);

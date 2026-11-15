@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
 	reducir_movimiento BOOL NOT NULL DEFAULT '0',
 	is_admin BOOL NOT NULL DEFAULT '0',
 	puede_registrar BOOL NOT NULL DEFAULT '1',
+	registro_disponible_desde DATETIME NULL,
 	PRIMARY KEY (id),
 	UNIQUE (correo)
 );

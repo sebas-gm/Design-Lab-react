@@ -1,9 +1,13 @@
 import { useNavigate, Navigate, Link } from "react-router-dom";
 import EntityForm from "./EntityForm";
 import { useLab } from "../context";
+import RegistrationWait from "./RegistrationWait";
+import { registrationWaiting } from "../registration";
 export default function RegisterEntity({ kind }) {
   const navigate = useNavigate();
   const { user, negocios, loading, error, refresh } = useLab();
+  if (kind === "negocios" && registrationWaiting(user))
+    return <main className="registrar-negocio"><RegistrationWait account={user} /></main>;
   if (kind === "negocios" && user.puede_registrar === false)
     return (
       <main className="registrar-negocio">

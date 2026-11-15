@@ -13,6 +13,7 @@ class User(Base):
     reducir_movimiento = Column(Boolean, nullable=False, default=False, server_default='0')
     is_admin = Column(Boolean, nullable=False, default=False, server_default='0')
     puede_registrar = Column(Boolean, nullable=False, default=True, server_default='1')
+    registro_disponible_desde = Column(DateTime, nullable=True)
 
 
 class Session(Base):

@@ -6,6 +6,7 @@ import EntityForm from "../components/EntityForm";
 import AdminDecision from "../components/AdminDecision";
 import AdminUserForm from "../components/AdminUserForm";
 import AdminOverview from "../components/AdminOverview";
+import { registrationWaiting } from "../registration";
 import "../styles/admin.css";
 
 function VideoEditor({ initial, businesses, onSaved, onCancel }) {
@@ -352,14 +353,24 @@ export default function AdminPanel() {
           {section === "negocios" && (
             <div className="admin-list">
               {data.negocios.filter(matches).map((b) => (
-                <article key={b.id}>
-                  <div>
+                <article key={b.id} className="admin-business-card">
+                  {b.imagen && (
+                    <img className="admin-business-facade" src={b.imagen} alt="" loading="lazy"
+                      onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                  )}
+                  <div className="admin-business-identity">
+                    {b.logo && (
+                      <img className="admin-business-logo" src={b.logo} alt={`Logo de ${b.nombre}`} loading="lazy"
+                        onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                    )}
+                    <div className="admin-business-details">
                     <span className={`admin-status status-${b.estado}`}>
                       {b.estado}
                     </span>
                     <h2>{b.nombre}</h2>
                     <p>{b.direccion}</p>
                     <small>Propietario: {ownerName(b.owner_id)}</small>
+                    </div>
                   </div>
                   <div className="admin-actions">
                     <button disabled={busy} onClick={() => edit("negocios", b)}>
@@ -413,6 +424,7 @@ export default function AdminPanel() {
                     <th>Cuenta</th>
                     <th>Negocio</th>
                     <th>Registro de negocio</th>
+                    <th>Espera de registro</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -451,6 +463,14 @@ export default function AdminPanel() {
                             <small>{u.restriccion_bloqueada}</small>
                           )}
                         </div>
+                      </td>
+                      <td>
+                        {registrationWaiting(u) ? (
+                          <div className="admin-permission-control">
+                            <span>Hasta {new Date(`${u.registro_disponible_desde}Z`).toLocaleString("es")}</span>
+                            <button disabled={busy} onClick={() => setDecision({ type: "wait", item: u })}>Levantar espera</button>
+                          </div>
+                        ) : "Sin espera vigente"}
                       </td>
                     </tr>
                   ))}

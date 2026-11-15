@@ -1,8 +1,12 @@
 import { Link, Navigate } from "react-router-dom";
 import { useLab } from "../context";
+import RegistrationWait from "../components/RegistrationWait";
+import { registrationWaiting } from "../registration";
 
 export default function ActivarNegocio() {
   const { user } = useLab();
+  if (registrationWaiting(user)) return <main className="videos-page"><RegistrationWait account={user} /></main>;
+  if (user.puede_registrar === false) return <Navigate to="/estado-negocio" replace />;
   if (user.tipo_cuenta === "negocios")
     return <Navigate to="/dashboard" replace />;
   return (

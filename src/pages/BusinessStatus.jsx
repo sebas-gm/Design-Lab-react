@@ -4,6 +4,8 @@ import { useLab } from "../context";
 import { api } from "../api";
 import { useConfirm } from "../confirmation";
 import "../styles/moderation.css";
+import RegistrationWait from "../components/RegistrationWait";
+import { registrationWaiting } from "../registration";
 
 export default function BusinessStatus() {
   const { moderation, moderationError } = useLab();
@@ -75,7 +77,9 @@ export default function BusinessStatus() {
           <p>
             {negocio
               ? `${negocio.nombre} · ${negocio.estado}`
-              : puede_registrar
+              : registrationWaiting(moderation)
+                ? "Registro temporalmente en espera tras eliminar tu negocio."
+                : puede_registrar
                 ? "Puedes registrar un negocio."
                 : "Registro de nuevos negocios pendiente de autorización."}
           </p>
@@ -83,6 +87,7 @@ export default function BusinessStatus() {
       </div>
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
+      {!negocio && registrationWaiting(moderation) && <RegistrationWait account={moderation} />}
       {eligible && (
         <section className="moderation-card">
           <h2>

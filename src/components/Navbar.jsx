@@ -152,6 +152,9 @@ export default function Navbar() {
             <button aria-label="Buscar">⌕</button>
           </form>
         )}
+        {user && !business && (user.registro_disponible_desde || user.puede_registrar === false) && (
+          <Link className="view-switch" to="/estado-negocio">Estado y solicitudes</Link>
+        )}
         {business && (
           <Link
             className={`view-switch ${workspace ? "from-workspace" : ""}`}

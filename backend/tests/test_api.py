@@ -480,6 +480,8 @@ def test_archived_readonly_stale_reviews_and_deletion_authorization(clients):
     assert state.json()['negocio'] is None
     assert state.json()['historial'][0]['estado'] == 'eliminado'
     assert state.json()['puede_registrar'] is False
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'personal'
+    assert state.json()['registro_disponible_desde'] is None
     assert 'SECRETO' not in state.text
     assert owner.post('/api/negocios', json=BUSINESS).status_code == 403
     assert owner.post('/api/importar', json={'negocios': [{**BUSINESS, 'id': 1}], 'productos': []}).status_code == 403
@@ -581,6 +583,83 @@ def test_admin_creates_personal_user_without_replacing_session(clients):
         assert verify_password(payload['contrasena'], saved.password_hash)
     assert visitor.post('/api/auth/login', json={'correo': account['correo'], 'contrasena': payload['contrasena']}).status_code == 200
     assert visitor.get('/api/admin/usuarios').status_code == 403
+
+
+def test_voluntary_deletion_returns_personal_and_enforces_wait_everywhere(clients):
+    from datetime import datetime, timedelta
+    from sqlalchemy.orm import Session
+    from backend.models import User
+    from backend.main import now
+    owner, admin = clients
+    uid = signup(owner, 'wait-owner@example.com').json()['id']
+    make_admin(admin)
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    before = now()
+    assert owner.delete(f'/api/negocios/{bid}').status_code == 204
+    account = owner.get('/api/auth/me').json()
+    assert account['tipo_cuenta'] == 'personal'
+    assert account['puede_registrar'] is True
+    deadline = datetime.fromisoformat(account['registro_disponible_desde'])
+    assert before + timedelta(days=15) <= deadline <= now() + timedelta(days=15)
+    state = owner.get('/api/mi-moderacion').json()
+    assert state['negocio'] is None
+    assert state['registro_disponible_desde'] == account['registro_disponible_desde']
+    assert state['historial'][0]['estado'] == 'eliminado'
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 403
+    assert owner.post('/api/importar', json={'negocios': [{**BUSINESS, 'id': 12}], 'productos': []}).status_code == 403
+    assert admin.post('/api/admin/negocios', json={**BUSINESS, 'owner_id': uid}).status_code == 403
+    assert owner.patch('/api/auth/profile', json={'registro_disponible_desde': None}).status_code == 422
+    # Authorization is independent: it cannot shorten a voluntary waiting period.
+    assert admin.patch(f'/api/admin/usuarios/{uid}/registro-negocio', json={'permitir': True, 'motivo': 'Autorización sin saltar el plazo.'}).status_code == 200
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 403
+    with Session(engine) as db:
+        db.get(User, uid).registro_disponible_desde = now() - timedelta(seconds=1)
+        db.commit()
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == 201
+    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'negocios'
+
+
+@pytest.mark.parametrize('restricted', [False, True])
+def test_only_admin_can_lift_wait_without_changing_permission(clients, restricted):
+    owner, admin = clients
+    uid = signup(owner, 'lift-owner@example.com').json()['id']
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    assert owner.delete(f'/api/negocios/{bid}').status_code == 204
+    make_admin(admin)
+    path = f'/api/admin/usuarios/{uid}/levantar-espera'
+    body = {'motivo': 'Se autoriza levantar la espera tras verificar la cuenta.', 'nota_interna': 'DETALLE_PRIVADO_ESPERA'}
+    assert owner.patch(path, json=body).status_code == 403
+    assert admin.patch(path, json={}).status_code == 422
+    if restricted:
+        assert admin.patch(f'/api/admin/usuarios/{uid}/registro-negocio', json={'permitir': False, 'motivo': 'Autorización adicional pendiente.'}).status_code == 200
+    row = next(u for u in admin.get('/api/admin/usuarios').json() if u['id'] == uid)
+    assert row['registro_disponible_desde']
+    response = admin.patch(path, json=body)
+    assert response.status_code == 200
+    assert response.json()['registro_disponible_desde'] is None
+    assert response.json()['puede_registrar'] is (not restricted)
+    assert owner.get('/api/auth/me').json()['registro_disponible_desde'] is None
+    notices = owner.get('/api/notificaciones')
+    assert 'Espera de registro levantada' in notices.text
+    assert 'DETALLE_PRIVADO_ESPERA' not in notices.text
+    assert admin.patch(path, json=body).status_code == 409
+    logs = [log for log in admin.get('/api/admin/historial').json() if log['accion'] == 'levantar_espera']
+    assert len(logs) == 1
+    assert logs[0]['detalle']['fecha_anterior']
+    assert owner.post('/api/negocios', json=BUSINESS).status_code == (403 if restricted else 201)
+
+
+def test_registration_wait_expires_at_exact_deadline():
+    from datetime import datetime, timedelta
+    from types import SimpleNamespace
+    from fastapi import HTTPException
+    from backend.registration import check_registration_wait
+    deadline = datetime(2026, 12, 1, 12)
+    user = SimpleNamespace(registro_disponible_desde=deadline)
+    with pytest.raises(HTTPException):
+        check_registration_wait(user, deadline - timedelta(microseconds=1))
+    check_registration_wait(user, deadline)
+    check_registration_wait(user, deadline + timedelta(seconds=1))
 
 
 def test_moderation_migration_preserves_existing_records():

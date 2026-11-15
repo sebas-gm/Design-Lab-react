@@ -26,6 +26,10 @@ export default function AdminDecision({ decision, onSaved, onCancel }) {
       path = `/admin/usuarios/${item.id}/registro-negocio`;
       body = { motivo: values.motivo, permitir: !item.puede_registrar };
     }
+    if (type === "wait") {
+      path = `/admin/usuarios/${item.id}/levantar-espera`;
+      body = values;
+    }
     if (type === "review") {
       path = `/admin/solicitudes/${item.id}`;
       body = {
@@ -61,6 +65,8 @@ export default function AdminDecision({ decision, onSaved, onCancel }) {
         ? "Eliminación definitiva"
         : type === "permission"
           ? "Permiso para registrar negocio"
+          : type === "wait"
+            ? "Levantar espera de 15 días"
           : decision.approve
             ? "Aprobar solicitud"
             : "Rechazar solicitud";
@@ -68,6 +74,7 @@ export default function AdminDecision({ decision, onSaved, onCancel }) {
     <section className="admin-editor">
       <h2>{title}</h2>
       <p>{item.nombre || item.nombre_negocio || item.correo}</p>
+      {type === "wait" && <p>Se eliminará la espera temporal. Si la cuenta requiere autorización administrativa, tendrás que concederla por separado.</p>}
       <form className="entity-form" onSubmit={save}>
         {type === "review" ? (
           <>

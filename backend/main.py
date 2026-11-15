@@ -14,6 +14,7 @@ from backend.models import Business, Product, Session, User, Video
 from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion, Register, VideoIn, ProfileUpdate
 from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
+from backend.registration import check_registration_wait
 from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin, migrate_moderation
 from backend.uploads import UPLOAD_DIR, save_image
 
@@ -70,7 +71,7 @@ def current_user(request: Request, db=Depends(get_db)):
 
 
 def public_user(user):
-    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta, 'avatar': user.avatar, 'reducir_movimiento': user.reducir_movimiento, 'is_admin': user.is_admin, 'puede_registrar': user.puede_registrar}
+    return {'id': user.id, 'nombre': user.nombre, 'correo': user.correo, 'tipo_cuenta': user.tipo_cuenta, 'avatar': user.avatar, 'reducir_movimiento': user.reducir_movimiento, 'is_admin': user.is_admin, 'puede_registrar': user.puede_registrar, 'registro_disponible_desde': user.registro_disponible_desde}
 
 
 def business_user(user=Depends(current_user)):
@@ -183,6 +184,7 @@ def products(user=Depends(current_user), db=Depends(get_db)):
 def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
     db.scalar(select(User).where(User.id == user.id).with_for_update())
     db.refresh(user)
+    check_registration_wait(user, now())
     if not user.puede_registrar:
         raise HTTPException(403, 'Tu cuenta necesita autorización administrativa para registrar otro negocio. Consulta Estado y solicitudes.')
     if db.scalar(select(Business.id).where(Business.owner_id == user.id).with_for_update()):
@@ -217,6 +219,12 @@ def delete_business(item_id: int, user=Depends(current_user), db=Depends(get_db)
         raise HTTPException(409, 'Elimina primero sus productos; no se borrarán en cascada')
     if db.scalar(select(Video.id).where(Video.negocioId == item_id).limit(1)):
         raise HTTPException(409, 'Elimina primero los enlaces de video de este negocio')
+    db.scalar(select(User).where(User.id == user.id).with_for_update())
+    db.refresh(user)
+    user.tipo_cuenta = 'personal'
+    user.registro_disponible_desde = now() + timedelta(days=15)
+    from backend.moderation import record_decision
+    record_decision(db, item, 'eliminado', 'Eliminaste voluntariamente tu negocio. Podrás registrar otro después de 15 días.')
     db.delete(item)
     db.commit()
 
@@ -268,6 +276,7 @@ def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_d
         raise HTTPException(422, 'Cada cuenta solo puede tener un negocio. Selecciona uno para importar; los demás se conservarán en el navegador.')
     db.scalar(select(User).where(User.id == user.id).with_for_update())
     db.refresh(user)
+    check_registration_wait(user, now())
     if not user.puede_registrar:
         raise HTTPException(403, 'Tu cuenta necesita autorización para registrar o importar un negocio')
     existing = db.scalar(select(Business).where(Business.owner_id == user.id).with_for_update())

@@ -11,6 +11,7 @@ from backend.moderation import notify, record_decision
 from backend.main import current_user, now, serialize, video_data, public_user
 from backend.schemas import Register
 from backend.security import hash_password
+from backend.registration import check_registration_wait
 
 
 def admin_user(user=Depends(current_user)):
@@ -63,6 +64,7 @@ def users(user=Depends(admin_user), db=Depends(get_db)):
     business_ids = dict(db.execute(select(Business.owner_id, Business.id)).all())
     return [{'id': u.id, 'nombre': u.nombre, 'correo': u.correo, 'tipo_cuenta': u.tipo_cuenta,
              'is_admin': u.is_admin, 'puede_registrar': u.puede_registrar, 'negocio_id': business_ids.get(u.id),
+             'registro_disponible_desde': u.registro_disponible_desde,
              'restriccion_bloqueada': restriction_reason(db, user, u)}
             for u in db.scalars(select(User).order_by(User.id.desc()))]
 
@@ -92,6 +94,7 @@ def businesses(db=Depends(get_db)):
 
 def assign_owner(db, owner_id, business_id=None):
     owner = get_item(db, User, owner_id)
+    check_registration_wait(owner, now())
     if not owner.puede_registrar:
         raise HTTPException(409, 'Autoriza primero a esta cuenta para registrar un nuevo negocio')
     existing = db.scalar(select(Business.id).where(Business.owner_id == owner_id).with_for_update())
@@ -150,6 +153,7 @@ def delete_business(item_id: int, data: ModerationReason, user=Depends(admin_use
     check_restriction(db, user, owner)
     record_decision(db, item, 'eliminado', data.motivo, data.nota_interna)
     owner.puede_registrar = False
+    owner.tipo_cuenta = 'personal'
     audit(db, user, 'eliminar', 'negocio', item.id, {'nombre': item.nombre, 'owner_id': item.owner_id, 'motivo': data.motivo, 'nota_interna': data.nota_interna})
     db.delete(item)
     finish(db)
@@ -299,3 +303,19 @@ def registration_permission(item_id: int, data: RegistrationPermission, user=Dep
     audit(db, user, 'permiso_registro', 'usuario', item_id, {'permitir': data.permitir, 'motivo': data.motivo})
     finish(db)
     return {'puede_registrar': owner.puede_registrar}
+
+
+@router.patch('/usuarios/{item_id}/levantar-espera')
+def lift_registration_wait(item_id: int, data: ModerationReason, user=Depends(admin_user), db=Depends(get_db)):
+    owner = get_item(db, User, item_id)
+    deadline = owner.registro_disponible_desde
+    if not deadline or deadline <= now():
+        raise HTTPException(409, 'Esta cuenta no tiene una espera vigente. Actualiza la lista de usuarios.')
+    owner.registro_disponible_desde = None
+    message = 'La espera de 15 días fue levantada. '
+    message += 'Puedes registrar un nuevo negocio.' if owner.puede_registrar else 'Todavía necesitas autorización administrativa para registrar un negocio.'
+    notify(db, owner.id, 'Espera de registro levantada', f'{message} {data.motivo}')
+    audit(db, user, 'levantar_espera', 'usuario', item_id,
+          {'fecha_anterior': deadline.isoformat(), 'motivo': data.motivo, 'nota_interna': data.nota_interna})
+    finish(db)
+    return {'registro_disponible_desde': None, 'puede_registrar': owner.puede_registrar}

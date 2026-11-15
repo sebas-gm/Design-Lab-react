@@ -59,6 +59,8 @@ def migrate_admin(engine):
 
 def migrate_moderation(engine):
     with engine.begin() as connection:
+        if 'registro_disponible_desde' not in {c['name'] for c in inspect(engine).get_columns('users')}:
+            connection.execute(text('ALTER TABLE users ADD COLUMN registro_disponible_desde DATETIME NULL'))
         if 'puede_registrar' not in {c['name'] for c in inspect(engine).get_columns('users')}:
             connection.execute(text('ALTER TABLE users ADD COLUMN puede_registrar BOOLEAN NOT NULL DEFAULT 1'))
         # Keep a visible explanation for pre-existing suspended/archived businesses.
