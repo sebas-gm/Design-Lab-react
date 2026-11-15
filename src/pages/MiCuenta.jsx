@@ -4,7 +4,6 @@ import { useLab } from "../context";
 import { api } from "../api";
 import ImagePicker from "../components/ImagePicker";
 import { useConfirm } from "../confirmation";
-import LegacyImport from "../components/LegacyImport";
 import "../styles/profile.css";
 
 function ProfileIcon({ name }) {
@@ -353,10 +352,6 @@ export default function MiCuenta() {
           </Link>
         </Setting>
       </section>
-      <details className="profile-legacy">
-        <summary>Importar datos anteriores</summary>
-        <LegacyImport />
-      </details>
     </main>
   );
 }

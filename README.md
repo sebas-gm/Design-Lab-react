@@ -54,8 +54,8 @@ Pruebas de la decisión del modal: `node --test tests/confirmation.test.mjs`. Co
 
 1. Registra una cuenta con contraseña de 12 caracteres como mínimo.
 2. Con una cuenta personal puedes acceder a Inicio, Negocios, Videos y Promociones. Desde **Registrar mi negocio** completas el formulario y activas tu cuenta de negocios al guardarlo. Después podrás administrar negocios, productos, horarios, promociones y videos. Cada propietario administra exclusivamente sus registros; el catálogo requiere iniciar sesión.
-3. Para los registros anteriores, abre el mismo navegador, perfil y origen donde los guardaste. En **Mi panel → Importar mis datos locales**, revisa el conteo y confirma. La importación es transaccional y repetible por cuenta sin duplicados; nunca vacía localStorage. Un producto sin negocio en el lote produce un error y revierte todo el lote. Un JSON inválido se informa sin borrarlo. Los datos locales anteriores no tienen propietario verificable: importa solo tus registros.
-4. El catálogo de ejemplo original se conserva en `src/data`. Puedes importarlo voluntariamente; sus direcciones son pendientes de verificar y no tienen coordenadas inventadas. Los registros de ejemplo importados pertenecen a tu cuenta.
+3. Los negocios y productos se administran mediante la API y MySQL. Las opciones de importación anterior se retiraron de Mi panel y Mi cuenta; no se borran registros locales del navegador.
+4. El catálogo de ejemplo original se conserva en `src/data` como referencia interna, sin opciones de importación en la interfaz.
 5. Selecciona las imágenes desde tu PC mediante el selector de archivos. El registro de negocios solicita una foto de fachada; el logo es opcional. Los productos también permiten seleccionar una imagen. Se muestra una vista previa antes de guardar. Se admiten JPG, PNG y WebP de hasta 5 MB y 20 megapíxeles. Las imágenes anteriores por URL siguen funcionando y se conservan al editar si no seleccionas otra foto.
 6. Registra latitud y longitud juntas para mostrar el mapa OpenStreetMap del negocio. Para la referencia configurable de TECBA, copia `.env.example` a `.env`, completa `VITE_TECBA_NAME`, `VITE_TECBA_LATITUDE` y `VITE_TECBA_LONGITUDE` y reinicia Vite. Se muestra en el catálogo. La sede exacta sigue pendiente; no se calculan distancias ni se afirma que una ubicación esté verificada. El mapa y las fotografías externas necesitan Internet.
 
@@ -95,7 +95,7 @@ Relaciones: `users` 1:N `businesses`, `businesses` 1:N `products`, `users` 1:N `
 - `backend/main.py`: API y permisos; `models.py`: tablas; `schemas.py`: validaciones; `security.py`: contraseñas y sesiones; `database.py`: configuración.
 - `src/api.js`, `context.js`, `components/LabProvider.jsx`: conexión y estado compartido.
 - `components/EntityForm.jsx`, `ManageEntities.jsx`, `AuthForm.jsx`: formularios reutilizables; páginas existentes conservan sus rutas.
-- `components/LegacyImport.jsx`: importación voluntaria; `LocationMap.jsx`: mapa.
+- `components/LegacyImport.jsx`: utilidad de migración conservada sin uso en las vistas; `LocationMap.jsx`: mapa.
 - `backend/tests/test_api.py`: pruebas aisladas.
 
 Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Para inspeccionarlo sin modificar tu trabajo usa `git show respaldo-inicial:ruta/del/archivo` o crea otra carpeta con `git worktree add ../design-lab-respaldo respaldo-inicial`. No uses `git reset --hard` para consultarlo.
@@ -148,7 +148,7 @@ La migración `migrate_admin` agrega el permiso y estado por defecto sin borrar 
 
 La vista `/mi-cuenta` presenta una tarjeta con nombre, correo, avatar y tipo de cuenta. **Editar perfil** permite cambiar el nombre y seleccionar una foto local con el mismo validador JPG/PNG/WebP de hasta 5 MB. La foto se guarda en `backend/uploads/` y su ruta en `users.avatar`. La edición de correo no está incluida; se muestra como dato de identificación de la cuenta. El avatar también se muestra en la barra lateral.
 
-Las secciones de configuración se despliegan al pulsarlas. **Preferencias** guarda la reducción de animaciones en `users.reducir_movimiento` y la aplica a toda la interfaz. **Privacidad** explica qué datos de cuenta y de negocio se muestran. **Seguridad** informa sobre la sesión y permite cerrarla. **Cuenta de negocios** lleva a activar o administrar el único negocio de la cuenta. La importación de datos anteriores sigue disponible en una sección desplegable.
+Las secciones de configuración se despliegan al pulsarlas. **Preferencias** guarda la reducción de animaciones en `users.reducir_movimiento` y la aplica a toda la interfaz. **Privacidad** explica qué datos de cuenta y de negocio se muestran. **Seguridad** informa sobre la sesión y permite cerrarla. **Cuenta de negocios** lleva a activar o administrar el único negocio de la cuenta. No se muestran herramientas de importación anterior.
 
 `PATCH /api/auth/profile` actualiza exclusivamente el perfil de la sesión actual. No admite cambiar correo, contraseña, identificador ni tipo de cuenta. Las fotos deben ser archivos ya subidos por ese usuario. La migración `migrate_profile` añade los campos sin borrar datos; se ejecuta al iniciar FastAPI o mediante `python -m backend.init_db`. Respaldo previo: `2898a30`, etiqueta `respaldo-antes-perfil`.
 
