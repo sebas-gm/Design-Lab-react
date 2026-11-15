@@ -354,15 +354,19 @@ export default function AdminPanel() {
             <div className="admin-list">
               {data.negocios.filter(matches).map((b) => (
                 <article key={b.id} className="admin-business-card">
-                  {b.imagen && (
+                  {(b.imagen || b.logo) && (
+                    <div className="admin-business-media">
+                    {b.imagen && (
                     <img className="admin-business-facade" src={b.imagen} alt="" loading="lazy"
                       onError={(event) => { event.currentTarget.style.display = "none"; }} />
-                  )}
-                  <div className="admin-business-identity">
+                    )}
                     {b.logo && (
                       <img className="admin-business-logo" src={b.logo} alt={`Logo de ${b.nombre}`} loading="lazy"
                         onError={(event) => { event.currentTarget.style.display = "none"; }} />
                     )}
+                    </div>
+                  )}
+                  <div className="admin-business-identity">
                     <div className="admin-business-details">
                     <span className={`admin-status status-${b.estado}`}>
                       {b.estado}

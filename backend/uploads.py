@@ -3,6 +3,7 @@ import io
 import os
 from pathlib import Path
 import uuid
+import math
 
 from fastapi import HTTPException, Request
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -12,6 +13,17 @@ MAX_BYTES = 5 * 1024 * 1024
 
 
 async def save_image(request: Request, user_id: int):
+    purpose = request.query_params.get('purpose', 'general')
+    if purpose not in ('general', 'logo', 'facade'):
+        raise HTTPException(422, 'Tipo de imagen no válido')
+    try:
+        x = float(request.query_params.get('x', '.5'))
+        y = float(request.query_params.get('y', '.5'))
+        zoom = float(request.query_params.get('zoom', '1'))
+        if not all(math.isfinite(v) for v in (x, y, zoom)) or not (0 <= x <= 1 and 0 <= y <= 1 and 1 <= zoom <= 3):
+            raise ValueError()
+    except ValueError:
+        raise HTTPException(422, 'Ajuste de imagen no válido')
     # Bound the entire multipart body before parsing it, including fake Content-Length.
     body = bytearray()
     async for chunk in request.stream():
@@ -34,6 +46,28 @@ async def save_image(request: Request, user_id: int):
                 raise HTTPException(413, 'La imagen supera los 20 megapíxeles')
             image.load()
             image = ImageOps.exif_transpose(image)
+            if purpose == 'logo':
+                if min(image.size) < 200:
+                    raise HTTPException(422, 'El logo debe medir al menos 200 × 200 píxeles')
+                # Contain, rather than crop, preserves the entire logo and alpha.
+                pixels = image.convert('RGBA')
+                side = round(512 / zoom)
+                ratio = side / max(pixels.size)
+                pixels = pixels.resize((max(1, round(pixels.width * ratio)), max(1, round(pixels.height * ratio))), Image.Resampling.LANCZOS)
+                square = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
+                square.paste(pixels, ((512 - pixels.width) // 2, (512 - pixels.height) // 2))
+                image = square
+            elif purpose == 'facade':
+                if image.width < 800 or image.height < 450:
+                    raise HTTPException(422, 'La fachada debe medir al menos 800 × 450 píxeles')
+                width = min(image.width, image.height * 16 / 9) / zoom
+                height = width * 9 / 16
+                if width < 800 - 0.000001 or height < 450 - 0.000001:
+                    raise HTTPException(422, 'Reduce el acercamiento: el recorte debe conservar al menos 800 × 450 píxeles')
+                left, top = (image.width - width) * x, (image.height - height) * y
+                image = image.crop((round(left), round(top), round(left + width), round(top + height)))
+                target_width = min(1280, int((width + 0.000001) // 16) * 16)
+                image = image.resize((target_width, target_width * 9 // 16), Image.Resampling.LANCZOS)
             image.thumbnail((1920, 1920))
             # Rebuild pixels to avoid retaining EXIF (including GPS) or other metadata.
             pixels = image.convert('RGBA' if 'A' in image.getbands() or 'transparency' in image.info else 'RGB')

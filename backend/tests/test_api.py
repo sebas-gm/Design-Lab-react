@@ -649,6 +649,44 @@ def test_only_admin_can_lift_wait_without_changing_permission(clients, restricte
     assert owner.post('/api/negocios', json=BUSINESS).status_code == (403 if restricted else 201)
 
 
+def test_business_images_dimensions_alpha_and_crop(clients, tmp_path, monkeypatch):
+    import io
+    from PIL import Image
+    import backend.uploads as uploads
+    monkeypatch.setattr(uploads, 'UPLOAD_DIR', tmp_path)
+    owner, _ = clients
+    signup(owner, 'adjust-images@example.com')
+
+    def send(image, query):
+        output = io.BytesIO()
+        image.save(output, format='PNG')
+        return owner.post(f'/api/imagenes?{query}', files={'file': ('photo.png', output.getvalue(), 'image/png')})
+
+    def saved(response):
+        assert response.status_code == 201, response.text
+        return Image.open(tmp_path / response.json()['url'].removeprefix('/api/uploads/'))
+
+    assert send(Image.new('RGB', (199, 300)), 'purpose=logo').status_code == 422
+    assert send(Image.new('RGB', (799, 600)), 'purpose=facade').status_code == 422
+    with saved(send(Image.new('RGBA', (400, 200), (120, 0, 200, 255)), 'purpose=logo')) as image:
+        assert image.size == (512, 512)
+        assert image.convert('RGBA').getpixel((0, 0))[3] == 0
+        assert image.convert('RGBA').getpixel((256, 256))[3] == 255
+    wide = Image.new('RGB', (1600, 450), 'red')
+    wide.paste('blue', (800, 0, 1600, 450))
+    for x, color in [(0, 0), (1, 2)]:
+        with saved(send(wide, f'purpose=facade&x={x}&zoom=1')) as image:
+            assert image.size == (800, 450)
+            pixel = image.convert('RGB').getpixel((400, 225))
+            assert pixel[color] > 220
+    with saved(send(Image.new('RGB', (1000, 1800)), 'purpose=facade&y=1')) as image:
+        assert image.width * 9 == image.height * 16
+        assert image.width >= 800
+    assert send(wide, 'purpose=facade&zoom=2').status_code == 422
+    assert send(wide, 'purpose=facade&x=nan').status_code == 422
+    assert send(wide, 'purpose=unknown').status_code == 422
+
+
 def test_registration_wait_expires_at_exact_deadline():
     from datetime import datetime, timedelta
     from types import SimpleNamespace

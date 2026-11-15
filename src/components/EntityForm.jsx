@@ -2,13 +2,15 @@ import { useState } from "react";
 import { api } from "../api";
 import { useLab } from "../context";
 import ImagePicker from "./ImagePicker";
+import BusinessImagePicker from "./BusinessImagePicker";
 import { useConfirm } from "../confirmation";
 import "../styles/registrarNegocio.css";
 
 async function upload(file) {
   const body = new FormData();
-  body.append("file", file);
-  return (await api("/imagenes", { method: "POST", body })).url;
+  body.append("file", file.file || file);
+  const params = file.purpose ? `?${new URLSearchParams({ purpose: file.purpose, x: file.x, y: file.y, zoom: file.zoom })}` : "";
+  return (await api(`/imagenes${params}`, { method: "POST", body })).url;
 }
 
 export default function EntityForm({
@@ -22,6 +24,7 @@ export default function EntityForm({
 }) {
   const confirm = useConfirm();
   const business = kind === "negocios";
+  const PhotoPicker = business ? BusinessImagePicker : ImagePicker;
   const { negocios, user, refresh } = useLab();
   const mine = adminMode
     ? availableBusinesses
@@ -297,7 +300,8 @@ export default function EntityForm({
           {business ? "3. Fotos del negocio" : "Imagen del producto"}
         </legend>
         <div className={business ? "form-two-columns" : ""}>
-          <ImagePicker
+          <PhotoPicker
+            purpose="facade"
             label={business ? "Foto de fachada" : "Foto del producto"}
             value={photo}
             onChange={setPhoto}
@@ -306,7 +310,8 @@ export default function EntityForm({
             disabled={busy}
           />
           {business && (
-            <ImagePicker
+            <BusinessImagePicker
+              purpose="logo"
               label="Logo del comercio (opcional)"
               value={logo}
               onChange={setLogo}

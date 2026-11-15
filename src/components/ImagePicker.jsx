@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function ImagePicker({
   label,
@@ -7,7 +7,10 @@ export default function ImagePicker({
   existing,
   required = false,
   disabled,
+  validationError = "",
 }) {
+  const input = useRef(null);
+  useEffect(() => { input.current?.setCustomValidity(validationError); }, [validationError]);
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
@@ -67,6 +70,7 @@ export default function ImagePicker({
                 : "Seleccionar imagen"}
           </span>
           <input
+            ref={input}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={select}
