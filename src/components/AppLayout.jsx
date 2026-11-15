@@ -24,7 +24,7 @@ export default function AppLayout() {
   }
   return (
     <div
-      className={`app-frame ${workspace ? "workspace-mode" : "explore-mode"}`}
+      className={`app-frame ${workspace ? "workspace-mode" : "explore-mode"} ${workspace && user?.is_admin ? "superadmin-mode" : ""}`}
     >
       <Navbar />
       <div

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useConfirm } from "../confirmation";
 import EntityForm from "../components/EntityForm";
 import AdminDecision from "../components/AdminDecision";
 import AdminUserForm from "../components/AdminUserForm";
+import AdminOverview from "../components/AdminOverview";
 import "../styles/admin.css";
 
 function VideoEditor({ initial, businesses, onSaved, onCancel }) {
@@ -91,12 +92,15 @@ const empty = {
 };
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get("q") || "";
+  const setQuery = (value) => setSearchParams(value ? { q: value } : {}, { replace: true });
   const section = useParams()["*"] || "";
   const confirm = useConfirm();
   const [data, setData] = useState(empty);
   const [editor, setEditor] = useState(null);
   const [decision, setDecision] = useState(null);
-  const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
@@ -271,34 +275,10 @@ export default function AdminPanel() {
         <>
           {!section && (
             <>
-              <div className="admin-stats">
-                {[
-                  ["Negocios", data.negocios.length],
-                  [
-                    "Activos",
-                    data.negocios.filter((b) => b.estado === "activo").length,
-                  ],
-                  ["Usuarios", data.usuarios.length],
-                  ["Productos", data.productos.length],
-                  ["Videos", data.videos.length],
-                ].map(([label, count]) => (
-                  <article key={label}>
-                    <strong>{count}</strong>
-                    <span>{label}</span>
-                  </article>
-                ))}
-              </div>
-              <section className="migration-panel">
-                <h2>Gestiona primero, conserva siempre</h2>
-                <p>
-                  Suspender o archivar un negocio lo oculta del catálogo para
-                  otros usuarios y conserva su contenido. El borrado definitivo
-                  exige archivarlo y retirar sus productos y videos primero.
-                </p>
-                <Link className="purple-link" to="/admin/negocios">
-                  Administrar negocios ↗
-                </Link>
-              </section>
+              <AdminOverview data={data} onCreate={(kind) => {
+                setEditor({ kind, item: null });
+                navigate(`/admin/${kind === "productos" ? "contenido" : kind}`);
+              }} />
             </>
           )}
           {["negocios", "usuarios", "contenido"].includes(section) && (

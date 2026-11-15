@@ -95,7 +95,7 @@ export default function Navbar() {
   function search(event) {
     event.preventDefault();
     navigate(
-      `/negocios?q=${encodeURIComponent(new FormData(event.currentTarget).get("q"))}`,
+      `${workspace && user?.is_admin ? "/admin/negocios" : "/negocios"}?q=${encodeURIComponent(new FormData(event.currentTarget).get("q"))}`,
     );
     setOpen(false);
   }
@@ -142,12 +142,12 @@ export default function Navbar() {
             {links(publicLinks)}
           </nav>
         )}
-        {clientView && (
+        {(clientView || (workspace && user?.is_admin)) && (
           <form className="topbar-search" role="search" onSubmit={search}>
             <input
               name="q"
               aria-label="Buscar negocios y productos"
-              placeholder="Busca algo..."
+              placeholder={workspace && user?.is_admin ? "Buscar negocios en el sistema…" : "Busca algo..."}
             />
             <button aria-label="Buscar">⌕</button>
           </form>
@@ -229,10 +229,16 @@ export default function Navbar() {
       )}
       {workspace && (
         <aside id="sidebar" className={`sidebar ${open ? "is-open" : ""}`}>
+          {user?.is_admin && (
+            <Link to="/admin" className="admin-sidebar-brand" onClick={() => setOpen(false)}>
+              <span className="brand-symbol" aria-hidden="true">N<span>•</span></span>
+              <span>Navishop</span>
+            </Link>
+          )}
           <nav aria-label="Herramientas de tu negocio">
             <p className="sidebar-label">
               {user?.is_admin
-                ? "Administración general"
+                ? "SUPERADMIN Bv"
                 : "Mi espacio de negocios"}
             </p>
             {links(user?.is_admin ? adminLinks : ownerLinks)}
