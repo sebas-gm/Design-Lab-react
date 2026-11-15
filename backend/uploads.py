@@ -47,8 +47,6 @@ async def save_image(request: Request, user_id: int):
             image.load()
             image = ImageOps.exif_transpose(image)
             if purpose == 'logo':
-                if min(image.size) < 200:
-                    raise HTTPException(422, 'El logo debe medir al menos 200 × 200 píxeles')
                 # Contain, rather than crop, preserves the entire logo and alpha.
                 pixels = image.convert('RGBA')
                 side = round(512 / zoom)
@@ -58,15 +56,13 @@ async def save_image(request: Request, user_id: int):
                 square.paste(pixels, ((512 - pixels.width) // 2, (512 - pixels.height) // 2))
                 image = square
             elif purpose == 'facade':
-                if image.width < 800 or image.height < 450:
-                    raise HTTPException(422, 'La fachada debe medir al menos 800 × 450 píxeles')
                 width = min(image.width, image.height * 16 / 9) / zoom
                 height = width * 9 / 16
-                if width < 800 - 0.000001 or height < 450 - 0.000001:
-                    raise HTTPException(422, 'Reduce el acercamiento: el recorte debe conservar al menos 800 × 450 píxeles')
                 left, top = (image.width - width) * x, (image.height - height) * y
-                image = image.crop((round(left), round(top), round(left + width), round(top + height)))
-                target_width = min(1280, int((width + 0.000001) // 16) * 16)
+                x0, y0 = min(image.width - 1, math.floor(left)), min(image.height - 1, math.floor(top))
+                x1, y1 = min(image.width, max(x0 + 1, math.ceil(left + width))), min(image.height, max(y0 + 1, math.ceil(top + height)))
+                image = image.crop((x0, y0, x1, y1))
+                target_width = max(16, min(1280, int((width + 0.000001) // 16) * 16))
                 image = image.resize((target_width, target_width * 9 // 16), Image.Resampling.LANCZOS)
             image.thumbnail((1920, 1920))
             # Rebuild pixels to avoid retaining EXIF (including GPS) or other metadata.

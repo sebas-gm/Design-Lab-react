@@ -43,3 +43,9 @@
     grid-template-columns: 1fr;
   }
 }
+.catalog-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-block: 20px; }
+.catalog-controls label { font-size: 12px; color: #79618a; }
+.pagina-negocios .catalog-controls select { margin-top: 0; max-width: 100%; }
+.catalog-controls label > select { margin-top: 6px; }
+.catalog-controls .catalog-checkbox { display: flex; align-items: center; gap: 8px; }
+.catalog-checkbox input { accent-color: #7739c5; }

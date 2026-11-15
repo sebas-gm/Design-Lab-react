@@ -3,6 +3,7 @@ import { api } from "../api";
 import { useLab } from "../context";
 import ImagePicker from "./ImagePicker";
 import BusinessImagePicker from "./BusinessImagePicker";
+import BusinessTimePicker from "./BusinessTimePicker";
 import { useConfirm } from "../confirmation";
 import { businessDays } from "../businessDays";
 import "../styles/registrarNegocio.css";
@@ -293,22 +294,8 @@ export default function EntityForm({
             <small>El horario de apertura y cierre se aplica a los días seleccionados. Si no seleccionas ninguno, se mostrará «Días sin especificar».</small>
           </fieldset>
           <div className="form-two-columns">
-            <label>
-              Hora de apertura
-              <input
-                name="hora_apertura"
-                type="time"
-                defaultValue={initial?.hora_apertura}
-              />
-            </label>
-            <label>
-              Hora de cierre
-              <input
-                name="hora_cierre"
-                type="time"
-                defaultValue={initial?.hora_cierre}
-              />
-            </label>
+            <BusinessTimePicker name="hora_apertura" label="Hora de apertura" initial={initial?.hora_apertura} />
+            <BusinessTimePicker name="hora_cierre" label="Hora de cierre" initial={initial?.hora_cierre} />
           </div>
         </fieldset>
       )}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useConfirm } from "../confirmation";
@@ -101,6 +101,17 @@ export default function AdminPanel() {
   const confirm = useConfirm();
   const [data, setData] = useState(empty);
   const [editor, setEditor] = useState(null);
+  const editorElement = useRef(null);
+  useEffect(() => {
+    if (!editor) return;
+    const frame = window.requestAnimationFrame(() => {
+      const element = editorElement.current;
+      if (!element) return;
+      element.querySelector('input:not([type="hidden"]), select, textarea')?.focus({ preventScroll: true });
+      element.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [editor, section]);
   const [decision, setDecision] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -319,6 +330,7 @@ export default function AdminPanel() {
           )}
           {editor && ["negocios", "contenido"].includes(section) && (
             <section
+              ref={editorElement}
               className="admin-editor"
               key={`${editor.kind}-${editor.item?.id || "new"}`}
             >
@@ -487,8 +499,11 @@ export default function AdminPanel() {
               <h2 className="admin-subtitle">Productos y promociones</h2>
               <div className="admin-list">
                 {data.productos.filter(matches).map((p) => (
-                  <article key={p.id}>
-                    <div>
+                  <article key={p.id} className="admin-product-card">
+                    <div className="admin-product-identity">
+                      <img className="admin-product-image" src={p.imagen || "/product-placeholder.svg"} alt={p.nombre} loading="lazy"
+                        onError={(event) => { event.currentTarget.onerror = null; if (!event.currentTarget.src.endsWith('/product-placeholder.svg')) event.currentTarget.src = '/product-placeholder.svg'; }} />
+                    <div className="admin-product-details">
                       <h3>{p.nombre}</h3>
                       <p>
                         {businessName(p.negocioId)} · Bs. {p.precio}
@@ -496,6 +511,7 @@ export default function AdminPanel() {
                       <small>
                         {p.promocion ? "Promoción activa" : "Sin promoción"}
                       </small>
+                    </div>
                     </div>
                     <div className="admin-actions">
                       <button

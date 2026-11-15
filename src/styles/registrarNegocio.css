@@ -159,3 +159,10 @@
     grid-template-columns: 1fr;
   }
 }
+.business-time-picker { min-width: 0; padding: 0; margin: 0; border: 0; }
+.business-time-picker > legend { color: #51465e; font-size: 13px; margin-bottom: 10px; }
+.business-time-controls { display: flex; align-items: flex-end; gap: 10px; }
+.business-time-controls > label { flex: 1; min-width: 0; font-size: 12px; }
+.business-time-controls > span { padding-bottom: 12px; color: #8d749e; }
+.business-time-controls .business-time-clear { padding: 12px 9px; font-size: 11px; background: #f4edfc; color: #7840ab; border-color: #e6d6f4; }
+.business-time-picker > small { display: block; color: #947da5; font-size: 11px; margin-top: 8px; }

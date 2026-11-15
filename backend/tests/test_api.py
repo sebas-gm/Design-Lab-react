@@ -666,8 +666,11 @@ def test_business_images_dimensions_alpha_and_crop(clients, tmp_path, monkeypatc
         assert response.status_code == 201, response.text
         return Image.open(tmp_path / response.json()['url'].removeprefix('/api/uploads/'))
 
-    assert send(Image.new('RGB', (199, 300)), 'purpose=logo').status_code == 422
-    assert send(Image.new('RGB', (799, 600)), 'purpose=facade').status_code == 422
+    assert send(Image.new('RGB', (199, 300)), 'purpose=logo').status_code == 201
+    assert send(Image.new('RGB', (799, 600)), 'purpose=facade').status_code == 201
+    for purpose in ['logo', 'facade']:
+        with saved(send(Image.new('RGB', (1, 1)), f'purpose={purpose}&zoom=3&x=1&y=1')) as tiny:
+            assert tiny.width > 0 and tiny.height > 0
     with saved(send(Image.new('RGBA', (400, 200), (120, 0, 200, 255)), 'purpose=logo')) as image:
         assert image.size == (512, 512)
         assert image.convert('RGBA').getpixel((0, 0))[3] == 0
@@ -682,7 +685,7 @@ def test_business_images_dimensions_alpha_and_crop(clients, tmp_path, monkeypatc
     with saved(send(Image.new('RGB', (1000, 1800)), 'purpose=facade&y=1')) as image:
         assert image.width * 9 == image.height * 16
         assert image.width >= 800
-    assert send(wide, 'purpose=facade&zoom=2').status_code == 422
+    assert send(wide, 'purpose=facade&zoom=2').status_code == 201
     assert send(wide, 'purpose=facade&x=nan').status_code == 422
     assert send(wide, 'purpose=unknown').status_code == 422
 

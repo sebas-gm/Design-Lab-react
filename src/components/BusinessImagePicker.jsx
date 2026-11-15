@@ -24,10 +24,6 @@ export default function BusinessImagePicker({ purpose, value, onChange, ...props
       bitmap.close();
       if (token !== version.current) return;
       if (dimensions.width * dimensions.height > 20_000_000) throw new Error("La imagen supera los 20 megapíxeles.");
-      if (dimensions.width < (logo ? 200 : 800) || dimensions.height < (logo ? 200 : 450))
-        throw new Error(logo ? "El logo debe medir al menos 200 × 200 px." : "La fachada debe medir al menos 800 × 450 px.");
-      if (!logo && Math.min(dimensions.width, dimensions.height * 16 / 9) < 800)
-        throw new Error("La imagen no permite un recorte de 800 × 450 px.");
       setSize(dimensions);
       setPreview(URL.createObjectURL(file));
       onChange({ file, purpose, x: .5, y: .5, zoom: 1 });
@@ -39,7 +35,7 @@ export default function BusinessImagePicker({ purpose, value, onChange, ...props
   }
 
   let cropStyle = {};
-  const maxZoom = size ? Math.max(1, Math.min(3, Math.min(size.width, size.height * 16 / 9) / 800)) : 1;
+  const maxZoom = 3;
   if (size && value && !logo) {
     const width = Math.min(size.width, size.height * 16 / 9) / value.zoom;
     const height = width * 9 / 16;
@@ -49,7 +45,7 @@ export default function BusinessImagePicker({ purpose, value, onChange, ...props
   return (
     <div className="business-image-picker">
       <ImagePicker {...props} value={value?.file} onChange={select} validationError={loading ? "Espera mientras se valida la imagen." : error} />
-      <small>{logo ? "Presentación circular · mínimo 200 × 200 px · recomendado 512 × 512 px. Conserva la transparencia." : "Horizontal 16:9 · mínimo 800 × 450 px · recomendado 1280 × 720 px."}</small>
+      <small>{logo ? "Presentación circular, sin dimensiones mínimas. Conserva la transparencia." : "Recorte horizontal 16:9, sin dimensiones mínimas."}</small>
       {error && <p role="alert">{error}</p>}
       {value && preview && size && (
         <div className="image-adjustment">
@@ -63,7 +59,7 @@ export default function BusinessImagePicker({ purpose, value, onChange, ...props
             <label>Posición vertical<input type="range" min="0" max="1" step="0.01" value={value.y} disabled={props.disabled} onChange={(e) => adjust("y", e.target.value)} /></label>
           </>}
           {(logo || maxZoom > 1) && <label>{logo ? "Margen alrededor del logo" : "Acercamiento"}<input type="range" min="1" max={logo ? 3 : maxZoom} step="0.01" value={value.zoom} disabled={props.disabled} onChange={(e) => adjust("zoom", e.target.value)} /></label>}
-          <small>{logo ? "Se guardará en un lienzo transparente de 512 × 512 px, sin cortar el logo." : "Se guardará en formato horizontal, hasta 1280 × 720 px, sin ampliar imágenes pequeñas."}</small>
+          <small>{logo ? "Se guardará en un lienzo transparente de 512 × 512 px, sin cortar el logo." : "Se guardará en formato horizontal optimizado. Las fotos pequeñas pueden verse menos nítidas."}</small>
         </div>
       )}
     </div>

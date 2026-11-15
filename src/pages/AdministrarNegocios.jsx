@@ -23,7 +23,7 @@ export default function AdministrarNegocios() {
   const business = negocios.find((n) => n.owner_id === user.id);
   const archived = business?.estado === "archivado";
   useEffect(() => {
-    if (editing) editor.current?.querySelector(`[name="${editing}"]`)?.focus();
+    if (editing) (editor.current?.querySelector(`[data-time-name="${editing}"] select`) || editor.current?.querySelector(`[name="${editing}"]`))?.focus();
   }, [editing]);
 
   async function edit(field = "nombre") {

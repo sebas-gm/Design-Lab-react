@@ -8,13 +8,17 @@ import Buscador from '../components/Buscador';
 
 import '../styles/home.css';
 import Hero from '../components/Hero';
+import { orderBusinesses, businessOpening } from '../catalogOrder';
+import { useCatalogTime } from '../useCatalogTime';
 
 function Home() {
+  const time = useCatalogTime();
   const [busqueda, setBusqueda] = useState('');
 
   const { negocios: todosLosNegocios, productos: todosLosProductos } = useLab();
 
-  const negociosFiltrados = todosLosNegocios.filter((negocio) =>
+  const activeBusinesses = orderBusinesses(todosLosNegocios, 'open', time);
+  const negociosFiltrados = activeBusinesses.filter((negocio) =>
     negocio.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
     negocio.categoria.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -22,7 +26,7 @@ function Home() {
   const promociones = todosLosProductos.filter(
     (producto) =>
       producto.promocion === true &&
-      todosLosNegocios.some(
+      activeBusinesses.some(
         (negocio) => negocio.id === producto.negocioId
       )
   );
@@ -34,11 +38,13 @@ function Home() {
       <Buscador busqueda={busqueda} setBusqueda={setBusqueda} />
 
       <h2>Negocios disponibles</h2>
+      <p className="catalog-order-note">Abiertos primero, con rotación diaria. Horarios de Bolivia.</p>
 
       <section className="contenedor-negocios">
         {negociosFiltrados.map((negocio) => (
           <CardNegocio
             key={negocio.id}
+            opening={businessOpening(negocio, time)}
             imagen={negocio.imagen}
             id={negocio.id}
             nombre={negocio.nombre}
