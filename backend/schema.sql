@@ -125,3 +125,23 @@ CREATE TABLE IF NOT EXISTS videos (
 	PRIMARY KEY (id),
 	FOREIGN KEY(`negocioId`) REFERENCES businesses (id)
 );
+
+CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    reporter_id INTEGER NOT NULL,
+    tipo VARCHAR(16) NOT NULL,
+    objetivo_id INTEGER NOT NULL,
+    negocio_id INTEGER NOT NULL,
+    nombre_objetivo VARCHAR(160) NOT NULL,
+    motivo VARCHAR(40) NOT NULL,
+    explicacion TEXT NOT NULL,
+    estado VARCHAR(16) NOT NULL DEFAULT 'pendiente',
+    pending_key VARCHAR(100) NULL UNIQUE,
+    resultado VARCHAR(16) NOT NULL DEFAULT '',
+    respuesta TEXT NOT NULL,
+    fecha DATETIME NOT NULL,
+    resuelta DATETIME NULL,
+    FOREIGN KEY (reporter_id) REFERENCES users(id),
+    INDEX ix_reports_reporter_id (reporter_id),
+    INDEX ix_reports_negocio_id (negocio_id)
+);

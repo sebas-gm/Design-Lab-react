@@ -6,6 +6,7 @@ import EntityForm from "../components/EntityForm";
 import AdminDecision from "../components/AdminDecision";
 import AdminUserForm from "../components/AdminUserForm";
 import AdminOverview from "../components/AdminOverview";
+import AdminReports from "../components/AdminReports";
 import { registrationWaiting } from "../registration";
 import "../styles/admin.css";
 
@@ -223,6 +224,7 @@ export default function AdminPanel() {
     contenido: "Contenido",
     historial: "Historial de administración",
     solicitudes: "Solicitudes de propietarios",
+    reportes: "Reportes de usuarios",
   };
 
   return (
@@ -235,7 +237,10 @@ export default function AdminPanel() {
         </div>
         <button
           disabled={busy || loading}
-          onClick={() => load().catch((e) => setError(e.message))}
+          onClick={() => {
+            if (section === "reportes") window.dispatchEvent(new Event('navishop:reports-refresh'));
+            load().catch((e) => setError(e.message));
+          }}
         >
           Actualizar
         </button>
@@ -248,6 +253,7 @@ export default function AdminPanel() {
           ["contenido", "Contenido"],
           ["historial", "Historial"],
           ["solicitudes", "Solicitudes"],
+          ["reportes", "Reportes"],
         ].map(([path, label]) => (
           <Link
             key={path}
@@ -285,6 +291,7 @@ export default function AdminPanel() {
         <p role="status">Cargando administración…</p>
       ) : (
         <>
+          {section === "reportes" && <AdminReports />}
           {!section && (
             <>
               <AdminOverview data={data} onCreate={(kind) => {

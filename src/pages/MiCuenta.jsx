@@ -275,6 +275,7 @@ export default function MiCuenta() {
 
       <section className="profile-settings" aria-labelledby="settings-title">
         <h2 id="settings-title">Configuración de la cuenta</h2>
+        {!user.is_admin && <Link className="purple-link" to="/mis-reportes">Mis reportes →</Link>}
         <Setting
           icon="preferences"
           title="Preferencias"

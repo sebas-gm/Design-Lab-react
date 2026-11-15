@@ -725,6 +725,70 @@ def test_opening_days_are_validated_and_saved_for_owner_and_admin(clients):
     assert owner.put(f'/api/negocios/{bid}', json={**BUSINESS, 'dias_atencion': ''}).json()['dias_atencion'] == ''
 
 
+def test_reports_permissions_privacy_review_and_notifications(clients):
+    reporter, owner = clients
+    signup(reporter, 'reporter@example.com')
+    signup(owner, 'reported-owner@example.com')
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    pid = owner.post('/api/productos', json={'negocioId': bid, 'nombre': 'Producto anunciado', 'precio': 10, 'descripcion': 'Descripción del producto.'}).json()['id']
+    body = {'tipo': 'producto', 'objetivo_id': pid, 'motivo': 'producto_distinto', 'explicacion': 'El producto entregado no coincide con la descripción publicada.'}
+    assert owner.post('/api/reportes', json=body).status_code == 403
+    assert reporter.get('/api/admin/reportes').status_code == 403
+    assert reporter.post('/api/reportes', json={**body, 'explicacion': 'corta'}).status_code == 422
+    assert reporter.post('/api/reportes', json={**body, 'motivo': 'invalido'}).status_code == 422
+    assert reporter.post('/api/reportes', json={**body, 'objetivo_id': 99999}).status_code == 404
+    with TestClient(app, headers=ORIGIN) as admin:
+        assert admin.post('/api/reportes', json=body).status_code == 401
+        make_admin(admin)
+        response = reporter.post('/api/reportes', json=body)
+        assert response.status_code == 201, response.text
+        rid = response.json()['id']
+        assert 'reporter_id' not in response.json() and 'pending_key' not in response.json()
+        assert reporter.post('/api/reportes', json=body).status_code == 409
+        assert owner.get('/api/mis-reportes').json() == []
+        assert reporter.get('/api/mis-reportes').json()[0]['id'] == rid
+        listing = admin.get('/api/admin/reportes').json()
+        assert listing[0]['correo_reportante'] == 'reporter@example.com'
+        assert 'Nuevo reporte' in admin.get('/api/notificaciones').text
+        path = f'/api/admin/reportes/{rid}'
+        assert owner.patch(path, json={'estado': 'en_revision'}).status_code == 403
+        assert admin.patch(path, json={'estado': 'en_revision'}).status_code == 200
+        assert reporter.post('/api/reportes', json=body).status_code == 409
+        assert admin.patch(path, json={'estado': 'en_revision'}).status_code == 409
+        assert admin.patch(path, json={'estado': 'resuelto'}).status_code == 422
+        assert admin.patch(path, json={'estado': 'resuelto', 'resultado': 'descartado', 'respuesta': 'La información publicada coincide con lo comprobado.'}).status_code == 200
+        assert reporter.get('/api/mis-reportes').json()[0]['estado'] == 'resuelto'
+        assert 'Tu reporte fue resuelto' in reporter.get('/api/notificaciones').text
+        assert 'reporter@example.com' not in owner.get('/api/notificaciones').text
+        assert admin.patch(path, json={'estado': 'en_revision'}).status_code == 409
+        assert reporter.get('/api/negocios').json()[0]['estado'] == 'activo'
+        assert reporter.get('/api/productos').json()[0]['id'] == pid
+        assert reporter.post('/api/reportes', json=body).status_code == 201
+        assert any(log['accion'] == 'revisar_reporte' for log in admin.get('/api/admin/historial').json())
+
+
+def test_business_reports_hidden_targets_and_deleted_product_snapshots(clients):
+    reporter, owner = clients
+    signup(reporter, 'business-reporter@example.com')
+    signup(owner, 'business-owner@example.com')
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    body = {'tipo': 'negocio', 'objetivo_id': bid, 'motivo': 'informacion_enganosa', 'explicacion': 'La información de ubicación publicada necesita una revisión.'}
+    assert reporter.post('/api/reportes', json=body).status_code == 201
+    assert owner.post('/api/reportes', json=body).status_code == 403
+    pid = owner.post('/api/productos', json={'negocioId': bid, 'nombre': 'Producto temporal', 'precio': 10, 'descripcion': 'Producto para revisar.'}).json()['id']
+    product = {**body, 'tipo': 'producto', 'objetivo_id': pid}
+    rid = reporter.post('/api/reportes', json=product).json()['id']
+    assert owner.delete(f'/api/productos/{pid}').status_code == 204
+    assert any(r['nombre_objetivo'] == 'Producto temporal' for r in reporter.get('/api/mis-reportes').json())
+    with TestClient(app, headers=ORIGIN) as admin:
+        make_admin(admin)
+        listing = admin.get('/api/admin/reportes').json()
+        assert next(r for r in listing if r['id'] == rid)['objetivo_existe'] is False
+        assert admin.patch(f'/api/admin/reportes/{rid}', json={'estado': 'resuelto', 'resultado': 'medidas', 'respuesta': 'El producto ya fue retirado del catálogo.'}).status_code == 200
+        assert admin.patch(f'/api/admin/negocios/{bid}/estado', json={'estado': 'suspendido', 'motivo': 'Se revisa su información.'}).status_code == 200
+        assert reporter.post('/api/reportes', json=body).status_code == 404
+
+
 def test_registration_wait_expires_at_exact_deadline():
     from datetime import datetime, timedelta
     from types import SimpleNamespace

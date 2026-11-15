@@ -361,4 +361,6 @@ from backend.moderation import router as moderation_router
 app.include_router(moderation_router)
 from backend.admin import router as admin_router
 app.include_router(admin_router)
+from backend.reports import router as reports_router
+app.include_router(reports_router)
 app.mount('/api/uploads', StaticFiles(directory=UPLOAD_DIR, check_dir=False), name='uploads')

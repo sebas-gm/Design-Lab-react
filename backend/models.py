@@ -112,3 +112,21 @@ class Notification(Base):
     mensaje = Column(Text, nullable=False)
     fecha = Column(DateTime, nullable=False)
     leida = Column(Boolean, nullable=False, default=False)
+
+
+class Report(Base):
+    __tablename__ = 'reports'
+    id = Column(Integer, primary_key=True)
+    reporter_id = Column(ForeignKey('users.id'), nullable=False, index=True)
+    tipo = Column(String(16), nullable=False)
+    objetivo_id = Column(Integer, nullable=False)
+    negocio_id = Column(Integer, nullable=False, index=True)
+    nombre_objetivo = Column(String(160), nullable=False)
+    motivo = Column(String(40), nullable=False)
+    explicacion = Column(Text, nullable=False)
+    estado = Column(String(16), nullable=False, default='pendiente')
+    pending_key = Column(String(100), nullable=True, unique=True)
+    resultado = Column(String(16), nullable=False, default='')
+    respuesta = Column(Text, nullable=False, default='')
+    fecha = Column(DateTime, nullable=False)
+    resuelta = Column(DateTime, nullable=True)

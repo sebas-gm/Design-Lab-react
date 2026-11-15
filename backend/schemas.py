@@ -8,6 +8,27 @@ class Input(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
 
 
+class ReportIn(Input):
+    tipo: Literal['negocio', 'producto']
+    objetivo_id: int = Field(gt=0)
+    motivo: Literal['informacion_enganosa', 'posible_fraude', 'producto_distinto', 'contenido_inapropiado', 'otro']
+    explicacion: str = Field(min_length=15, max_length=2000)
+
+
+class ReportDecision(Input):
+    estado: Literal['en_revision', 'resuelto']
+    resultado: Literal['', 'medidas', 'descartado'] = ''
+    respuesta: str = Field(default='', max_length=2000)
+
+    @model_validator(mode='after')
+    def resolution(self):
+        if self.estado == 'resuelto' and (not self.resultado or len(self.respuesta) < 5):
+            raise ValueError('Selecciona un resultado y escribe una respuesta de al menos 5 caracteres')
+        if self.estado == 'en_revision' and (self.resultado or self.respuesta):
+            raise ValueError('La respuesta y el resultado se guardan al resolver el reporte')
+        return self
+
+
 class Register(Input):
     nombre: str = Field(min_length=2, max_length=120)
     correo: EmailStr

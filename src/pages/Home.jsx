@@ -69,6 +69,7 @@ function Home() {
           return (
             <CardProducto
               key={producto.id}
+              id={producto.id}
               imagen={producto.imagen}
               nombre={producto.nombre}
               precio={producto.precio}

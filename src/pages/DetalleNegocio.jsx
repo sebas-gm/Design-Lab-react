@@ -1,5 +1,6 @@
 import LocationMap from "../components/LocationMap";
 import FacadeImage from "../components/FacadeImage";
+import ReportLink from "../components/ReportLink";
 import { formatBusinessDays } from "../businessDays";
 import { useLab } from "../context";
 
@@ -55,6 +56,7 @@ function DetalleNegocio() {
         <span className="detalle-categoria">{negocio.categoria}</span>
 
         <h1>{negocio.nombre}</h1>
+        <ReportLink tipo="negocio" id={negocio.id} />
         {negocio.estado && negocio.estado !== "activo" && (
           <p role="status">
             Este negocio está {negocio.estado} y no se muestra a otros usuarios.
@@ -123,6 +125,8 @@ function DetalleNegocio() {
             {productosNegocio.map((producto) => (
               <CardProducto
                 key={producto.id}
+                id={producto.id}
+                negocioId={negocio.id}
                 imagen={producto.imagen}
                 nombre={producto.nombre}
                 precio={producto.precio}

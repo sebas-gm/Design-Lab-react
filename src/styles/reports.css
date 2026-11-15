@@ -1,0 +1,21 @@
+.reports-page { padding: 32px; max-width: 1100px; margin-inline: auto; }
+.reports-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; margin-bottom: 25px; padding-left: 16px; border-left: 5px solid #b45cf0; }
+.reports-heading h1 { font-size: 28px; margin-bottom: 7px; }
+.reports-heading p, .report-card p, .report-help { font-size: 13px; color: #7b678d; line-height: 1.7; }
+.report-card { padding: 24px; margin-block: 20px; background: white; border: 1px solid #e6daf3; border-radius: 16px; }
+.report-card h2 { font-size: 18px; margin-block: 10px; }
+.report-card small { color: #957fa5; font-size: 11px; overflow-wrap: anywhere; }
+.report-card-heading { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.report-status { display: inline-block; padding: 6px 10px; border-radius: 14px; font-size: 11px; color: #8246b7; background: #f0e4ff; }
+.report-text, .report-response p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-response { background: #faf6ff; padding: 16px; border-radius: 10px; margin-top: 16px; font-size: 13px; }
+.report-form fieldset { display: grid; gap: 16px; padding: 0; border: 0; min-width: 0; margin-top: 20px; }
+.report-form label, .report-toolbar label { color: #735585; font-size: 13px; }
+.report-form textarea, .report-form select, .report-toolbar select { padding: 12px; border: 1px solid #dccaea; border-radius: 9px; background: white; font-family: inherit; }
+.report-link { display: inline-block; margin: 12px 0 0; padding: 5px 0; color: #8d628c; font-size: 12px; text-decoration: underline; }
+.report-actions { margin-block: 16px; align-items: center; }
+.report-actions a, .reports-heading a, .report-card > a { color: #7838be; font-size: 12px; }
+.report-toolbar { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; font-size: 12px; color: #8a709e; }
+.report-toolbar select { margin-left: 12px; }
+.report-feedback { padding: 14px; background: #fff1f5; color: #a23b61; border-radius: 9px; }
+@media (max-width: 600px) { .reports-page { padding: 24px 16px; } .report-card { padding: 18px; } .report-toolbar select { display: block; margin: 8px 0 0; } }

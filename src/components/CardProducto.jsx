@@ -1,8 +1,9 @@
 
 import { Link } from 'react-router-dom';
 import '../styles/cardProducto.css';
+import ReportLink from './ReportLink';
 
-function CardProducto({ imagen, nombre, precio, descripcion, promocion, negocioId, nombreNegocio }) {
+function CardProducto({ id, imagen, nombre, precio, descripcion, promocion, negocioId, nombreNegocio }) {
   return (
     <div className="card-producto">
       <img className="producto-imagen" src={imagen || "/product-placeholder.svg"} alt={nombre} loading="lazy" onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = "/product-placeholder.svg"; }} />
@@ -25,6 +26,7 @@ function CardProducto({ imagen, nombre, precio, descripcion, promocion, negocioI
           Ver negocio
         </Link>
       )}
+      <ReportLink tipo="producto" id={id} negocioId={negocioId} />
     </div>
   );
 }
