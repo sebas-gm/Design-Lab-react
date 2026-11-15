@@ -73,6 +73,14 @@
   gap: 14px;
   margin-block: 22px;
 }
+.admin-user-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
 .admin-list > article {
   padding: 23px;
   border: 1px solid #e5d8ef;
@@ -93,6 +101,9 @@
 }
 .admin-list .platform-badge + h3 {
   margin-top: 12px;
+}
+.admin-user-name + .platform-badge {
+  margin-inline-start: 12px;
 }
 .admin-list p {
   font-size: 13px;

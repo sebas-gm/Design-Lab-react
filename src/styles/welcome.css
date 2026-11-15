@@ -171,7 +171,7 @@
   position: relative;
   margin: 70px 16px 35px;
   padding: 30px;
-  border: 1px solid #eee3f8;
+  border: 1px solid rgb(255, 255, 255);
   box-shadow: 0 25px 100px #10041b66;
 }
 .entry-layout > .login .entry-back {

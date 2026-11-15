@@ -8,7 +8,9 @@ from backend.database import get_db
 from backend.models import AuditLog, Business, Product, User, Video, ModerationEvent, ReviewRequest
 from backend.schemas import AdminBusinessIn, BusinessStatus, ProductIn, Promotion, VideoIn, ModerationReason, ReviewDecision, RegistrationPermission
 from backend.moderation import notify, record_decision
-from backend.main import current_user, now, serialize, video_data
+from backend.main import current_user, now, serialize, video_data, public_user
+from backend.schemas import Register
+from backend.security import hash_password
 
 
 def admin_user(user=Depends(current_user)):
@@ -63,6 +65,24 @@ def users(user=Depends(admin_user), db=Depends(get_db)):
              'is_admin': u.is_admin, 'puede_registrar': u.puede_registrar, 'negocio_id': business_ids.get(u.id),
              'restriccion_bloqueada': restriction_reason(db, user, u)}
             for u in db.scalars(select(User).order_by(User.id.desc()))]
+
+
+@router.post('/usuarios', status_code=201)
+def create_user(data: Register, user=Depends(admin_user), db=Depends(get_db)):
+    account = User(nombre=data.nombre, correo=str(data.correo).lower(),
+                   password_hash=hash_password(data.contrasena), is_admin=False,
+                   tipo_cuenta='personal', puede_registrar=True)
+    db.add(account)
+    try:
+        db.flush()
+        audit(db, user, 'crear', 'usuario', account.id,
+              {'nombre': account.nombre, 'correo': account.correo})
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, 'El correo ya está registrado')
+    # Creating an account must never replace the administrator's session.
+    return public_user(account)
 
 
 @router.get('/negocios')

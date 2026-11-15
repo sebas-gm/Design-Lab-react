@@ -4,6 +4,7 @@ import { api } from "../api";
 import { useConfirm } from "../confirmation";
 import EntityForm from "../components/EntityForm";
 import AdminDecision from "../components/AdminDecision";
+import AdminUserForm from "../components/AdminUserForm";
 import "../styles/admin.css";
 
 function VideoEditor({ initial, businesses, onSaved, onCancel }) {
@@ -310,6 +311,14 @@ export default function AdminPanel() {
               />
             </label>
           )}
+          {section === "usuarios" && (
+            <>
+              <button onClick={() => setEditor({ kind: "usuarios", item: null })}>Agregar usuario</button>
+              {editor?.kind === "usuarios" && (
+                <AdminUserForm onSaved={saved} onCancel={() => setEditor(null)} />
+              )}
+            </>
+          )}
           {section === "negocios" && (
             <button onClick={() => setEditor({ kind: "negocios", item: null })}>
               Agregar negocio
@@ -430,7 +439,7 @@ export default function AdminPanel() {
                   {data.usuarios.filter(matches).map((u) => (
                     <tr key={u.id}>
                       <td>
-                        {u.nombre}
+                        <span className="admin-user-name">{u.nombre}</span>
                         {u.is_admin && (
                           <span className="platform-badge"> Administrador</span>
                         )}

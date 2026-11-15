@@ -546,6 +546,43 @@ def test_admin_cannot_restrict_itself_even_through_business_deletion(clients):
     assert admin.patch(path, json={'permitir': False, 'motivo': 'Sigue siendo una autorrestricción.'}).status_code == 409
 
 
+def test_admin_creates_personal_user_without_replacing_session(clients):
+    admin, visitor = clients
+    payload = {'nombre': 'Nueva Persona', 'correo': 'NUEVA@example.com',
+               'contrasena': 'Una-clave-de-prueba-2026'}
+    assert visitor.post('/api/admin/usuarios', json=payload).status_code == 401
+    signup(visitor, 'ordinary@example.com')
+    assert visitor.post('/api/admin/usuarios', json=payload).status_code == 403
+    make_admin(admin)
+    original = admin.get('/api/auth/me').json()['id']
+    assert admin.post('/api/admin/usuarios', json={**payload, 'is_admin': True}).status_code == 422
+    assert admin.post('/api/admin/usuarios', json={**payload, 'contrasena': 'corta'}).status_code == 422
+    response = admin.post('/api/admin/usuarios', json=payload)
+    assert response.status_code == 201, response.text
+    account = response.json()
+    assert account['correo'] == 'nueva@example.com'
+    assert account['tipo_cuenta'] == 'personal'
+    assert account['is_admin'] is False
+    assert 'password' not in response.text and payload['contrasena'] not in response.text
+    assert 'set-cookie' not in response.headers
+    assert admin.get('/api/auth/me').json()['id'] == original
+    assert admin.post('/api/admin/usuarios', json=payload).status_code == 409
+    history = admin.get('/api/admin/historial').json()
+    creations = [log for log in history if log['recurso'] == 'usuario' and log['accion'] == 'crear']
+    assert len(creations) == 1
+    assert creations[0]['actor_id'] == original
+    assert payload['contrasena'] not in str(history)
+    from sqlalchemy.orm import Session
+    from backend.models import User
+    from backend.security import verify_password
+    with Session(engine) as db:
+        saved = db.get(User, account['id'])
+        assert saved.password_hash != payload['contrasena']
+        assert verify_password(payload['contrasena'], saved.password_hash)
+    assert visitor.post('/api/auth/login', json={'correo': account['correo'], 'contrasena': payload['contrasena']}).status_code == 200
+    assert visitor.get('/api/admin/usuarios').status_code == 403
+
+
 def test_moderation_migration_preserves_existing_records():
     from sqlalchemy import create_engine, text
     from backend.migrations import migrate_moderation
