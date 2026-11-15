@@ -40,7 +40,7 @@ export default function ActivarNegocio() {
           guardar, tu cuenta seguirá siendo personal.
         </p>
         <Link className="purple-link" to="/registrar-negocio">
-          Completar datos de mi negocio ↗
+          Completar datos de mi negocio 
         </Link>
         <Link className="activation-back" to="/">
           Seguir explorando

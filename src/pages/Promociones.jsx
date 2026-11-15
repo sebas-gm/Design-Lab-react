@@ -28,7 +28,7 @@ export default function Promociones() {
         <div className="empty-state">
           <h2>Pronto habrá novedades</h2>
           <p>Todavía no hay promociones activas.</p>
-          <Link to="/negocios">Explorar negocios ↗</Link>
+          <Link to="/negocios">Explorar negocios </Link>
         </div>
       )}
     </main>

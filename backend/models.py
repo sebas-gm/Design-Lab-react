@@ -40,6 +40,7 @@ class Business(Base):
     enlace_mapa = Column(String(2048), nullable=False, default='', server_default='')
     hora_apertura = Column(String(5), nullable=False, default='', server_default='')
     hora_cierre = Column(String(5), nullable=False, default='', server_default='')
+    dias_atencion = Column(String(60), nullable=False, default='', server_default='')
     logo = Column(String(2048), nullable=False, default='', server_default='')
     estado = Column(String(16), nullable=False, default='activo', server_default='activo')
     __table_args__ = (UniqueConstraint('owner_id', 'legacy_id'), UniqueConstraint('owner_id', name='uq_business_owner'))

@@ -4,6 +4,7 @@ import { useLab } from "../context";
 import ImagePicker from "./ImagePicker";
 import BusinessImagePicker from "./BusinessImagePicker";
 import { useConfirm } from "../confirmation";
+import { businessDays } from "../businessDays";
 import "../styles/registrarNegocio.css";
 
 async function upload(file) {
@@ -31,6 +32,7 @@ export default function EntityForm({
     : negocios.filter((n) => n.owner_id === user.id);
   const [error, setError] = useState("");
   const [description, setDescription] = useState(initial?.descripcion || "");
+  const [days, setDays] = useState((initial?.dias_atencion || "").split(",").filter(Boolean));
   const [busy, setBusy] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [logo, setLogo] = useState(null);
@@ -54,6 +56,7 @@ export default function EntityForm({
     // File controls have no name: only their validated server paths enter the JSON.
     values.imagen = initial?.imagen || "";
     if (business) {
+      values.dias_atencion = businessDays.filter(([id]) => days.includes(id)).map(([id]) => id).join(",");
       values.logo = initial?.logo || "";
       values.latitud = values.latitud === "" ? null : Number(values.latitud);
       values.longitud = values.longitud === "" ? null : Number(values.longitud);
@@ -282,6 +285,13 @@ export default function EntityForm({
       {business && (
         <fieldset disabled={busy} className="form-section">
           <legend>2. Horario de atención</legend>
+          <fieldset className="business-days">
+            <legend>Días de atención</legend>
+            <div>{businessDays.map(([id, label]) => (
+              <label key={id}><input type="checkbox" checked={days.includes(id)} onChange={(event) => setDays((previous) => event.target.checked ? [...previous, id] : previous.filter((day) => day !== id))} />{label}</label>
+            ))}</div>
+            <small>El horario de apertura y cierre se aplica a los días seleccionados. Si no seleccionas ninguno, se mostrará «Días sin especificar».</small>
+          </fieldset>
           <div className="form-two-columns">
             <label>
               Hora de apertura

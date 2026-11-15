@@ -348,7 +348,7 @@ export default function MiCuenta() {
             className="purple-link"
             to={business ? "/administrar-negocios" : "/activar-negocio"}
           >
-            {business ? "Administrar mi negocio" : "Registrar mi negocio"} ↗
+            {business ? "Administrar mi negocio" : "Registrar mi negocio"} 
           </Link>
         </Setting>
       </section>

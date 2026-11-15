@@ -704,6 +704,24 @@ def test_description_limits_for_owner_and_admin(clients):
     assert owner.get('/api/negocios').json()[0]['descripcion'] == 'x' * 500
 
 
+def test_opening_days_are_validated_and_saved_for_owner_and_admin(clients):
+    owner, admin = clients
+    uid = signup(owner, 'opening-days@example.com').json()['id']
+    make_admin(admin)
+    for value in ['lunes', 'lun,lun', 'lun,invalid', 'lun,', 'LUN', 'lun, mar']:
+        assert owner.post('/api/negocios', json={**BUSINESS, 'dias_atencion': value}).status_code == 422
+        assert admin.post('/api/admin/negocios', json={**BUSINESS, 'owner_id': uid, 'dias_atencion': value}).status_code == 422
+    response = owner.post('/api/negocios', json={**BUSINESS, 'dias_atencion': 'sab,lun,mie'})
+    assert response.status_code == 201
+    assert response.json()['dias_atencion'] == 'lun,mie,sab'
+    bid = response.json()['id']
+    changed = admin.put(f'/api/admin/negocios/{bid}', json={**BUSINESS, 'owner_id': uid, 'dias_atencion': 'dom,mar'})
+    assert changed.status_code == 200
+    assert changed.json()['dias_atencion'] == 'mar,dom'
+    assert owner.get('/api/negocios').json()[0]['dias_atencion'] == 'mar,dom'
+    assert owner.put(f'/api/negocios/{bid}', json={**BUSINESS, 'dias_atencion': ''}).json()['dias_atencion'] == ''
+
+
 def test_registration_wait_expires_at_exact_deadline():
     from datetime import datetime, timedelta
     from types import SimpleNamespace

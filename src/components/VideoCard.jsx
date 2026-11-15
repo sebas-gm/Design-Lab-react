@@ -37,7 +37,7 @@ export default function VideoCard({ video, nombreNegocio, children }) {
           target="_blank"
           rel="noreferrer"
         >
-          Abrir en {video.plataforma} ↗
+          Abrir en {video.plataforma} 
         </a>
         {playing && (
           <small>

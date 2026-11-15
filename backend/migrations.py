@@ -7,6 +7,7 @@ BUSINESS_COLUMNS = {
     'enlace_mapa': 'VARCHAR(2048)',
     'hora_apertura': 'VARCHAR(5)',
     'hora_cierre': 'VARCHAR(5)',
+    'dias_atencion': 'VARCHAR(60)',
     'logo': 'VARCHAR(2048)',
 }
 

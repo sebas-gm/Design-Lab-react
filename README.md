@@ -1,5 +1,17 @@
 # Navishop
 
+## Descargar y colaborar
+
+```powershell
+git clone https://github.com/sebas-gm/Design-Lab-react.git
+cd Design-Lab-react
+git switch -c feature/mi-cambio
+```
+
+Sigue las instrucciones de instalación siguientes desde esa carpeta. Cada integrante configura su propio MySQL y su archivo `backend/.env`; las cuentas, las sesiones y las imágenes subidas no se comparten mediante Git. El esquema y las migraciones permiten preparar una base local sin borrar datos. No se incluyen contraseñas de usuarios ni credenciales del propietario del repositorio.
+
+Antes de comenzar otra tarea, actualiza la rama principal con `git switch master` y `git pull --ff-only`. Trabaja en una rama propia, guarda los cambios con un commit y súbela con `git push -u origin feature/mi-cambio`. Abre un pull request hacia `master` para revisarlo antes de integrar. Ejecuta `npm.cmd run lint`, `npm.cmd run build` y `.\.venv\Scripts\python -m pytest backend/tests -q -p no:cacheprovider` antes de proponer cambios. Nunca agregues archivos `.env`, `.venv`, `node_modules` ni `backend/uploads` al repositorio.
+
 La marca de la aplicación es **Navishop**. El paquete del frontend se llama `navishop` y la documentación de FastAPI se presenta como Navishop API. La base existente conserva el nombre técnico `design_lab_db`, y se mantienen la cookie y los eventos internos de sesión anteriores para conservar la compatibilidad. El cambio de marca no requiere crear otra base ni modificar credenciales.
 
 Directorio de negocios cercanos a TECBA. React + Vite, FastAPI, SQLAlchemy y MySQL. Conserva el diseño morado, las rutas y el catálogo original como datos de ejemplo importables.
@@ -209,3 +221,5 @@ Eliminación y tipo de cuenta: al eliminar voluntariamente un negocio activo (si
 Excepción a la espera: Superadmin → Usuarios → Espera de registro → Levantar espera permite retirar un plazo vigente con motivo obligatorio, confirmación, notificación al titular y auditoría de la fecha anterior. No cambia puede_registrar, el tipo de cuenta ni la regla de un negocio por propietario. Si la cuenta está restringida, también es necesario Autorizar. No permite levantar esperas inexistentes o vencidas.
 
 Imágenes de negocio: la selección de nuevas fachadas ofrece un recorte 16:9 con posición horizontal/vertical y acercamiento limitado para conservar al menos 800 × 450 px. Salida WebP de hasta 1280 × 720 px. Los logos requieren mínimo 200 × 200 px y se encajan completos en un lienzo transparente de 512 × 512 px, con margen ajustable. Se mantienen JPG/PNG/WebP, máximo 5 MB y 20 megapíxeles. FastAPI valida dimensiones y ajustes mediante /api/imagenes?purpose=logo o purpose=facade. Productos y avatar conservan su carga general; las imágenes existentes no se reprocesan.
+
+Días de atención: el formulario compartido permite seleccionar lunes a domingo. Se guardan en businesses.dias_atencion como códigos ordenados y sin duplicados; el backend rechaza valores desconocidos. La apertura y el cierre se aplican a los días seleccionados. Mi negocio y la vista pública muestran la selección; sin selección indican Días sin especificar. La migración añade la columna con valor vacío para conservar los registros existentes sin inventar sus días de atención.

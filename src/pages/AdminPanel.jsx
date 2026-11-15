@@ -528,7 +528,7 @@ export default function AdminPanel() {
                         {businessName(v.negocioId)} · {v.plataforma}
                       </p>
                       <a href={v.url} target="_blank" rel="noreferrer">
-                        Ver en su plataforma ↗
+                        Ver en su plataforma 
                       </a>
                     </div>
                     <div className="admin-actions">

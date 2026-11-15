@@ -153,7 +153,7 @@ export default function Videos({ manage = false }) {
           className="purple-link"
           to={manage ? "/videos" : user ? "/administrar-videos" : "/login"}
         >
-          {manage ? "Explorar videos" : "Compartir un video"} ↗
+          {manage ? "Explorar videos" : "Compartir un video"} 
         </Link>
       </div>
       {manage ? (
@@ -229,7 +229,7 @@ export default function Videos({ manage = false }) {
           <div className="empty-state">
             <h2>Tu negocio tiene una historia</h2>
             <p>Registra primero tu negocio para compartir sus videos.</p>
-            <Link to="/registrar-negocio">Registrar negocio ↗</Link>
+            <Link to="/registrar-negocio">Registrar negocio </Link>
           </div>
         )
       ) : (

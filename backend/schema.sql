@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS businesses (
 	enlace_mapa VARCHAR(2048) NOT NULL DEFAULT '',
 	hora_apertura VARCHAR(5) NOT NULL DEFAULT '',
 	hora_cierre VARCHAR(5) NOT NULL DEFAULT '',
+	dias_atencion VARCHAR(60) NOT NULL DEFAULT '',
 	logo VARCHAR(2048) NOT NULL DEFAULT '',
 	estado VARCHAR(16) NOT NULL DEFAULT 'activo',
 	PRIMARY KEY (id),

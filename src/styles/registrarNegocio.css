@@ -70,6 +70,13 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
 }
+.business-days { border: 0; padding: 0; margin: 0 0 20px; min-width: 0; }
+.business-days > legend { font-size: 13px; font-weight: 600; color: #614178; margin-bottom: 12px; }
+.business-days > div { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.business-days > div > label { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #e6d6f4; border-radius: 10px; background: #fcf9ff; cursor: pointer; }
+.business-days > div > label:has(input:checked) { background: #eee2ff; border-color: #b586dd; color: #642ca4; }
+.business-days input { accent-color: #7739c5; }
+.business-days > small { display: block; color: #8b779b; font-size: 12px; line-height: 1.6; }
 .entity-form label {
   font-size: 13px;
   color: #51465e;

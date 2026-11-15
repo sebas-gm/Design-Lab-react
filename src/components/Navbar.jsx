@@ -152,9 +152,6 @@ export default function Navbar() {
             <button aria-label="Buscar">⌕</button>
           </form>
         )}
-        {user && !business && (user.registro_disponible_desde || user.puede_registrar === false) && (
-          <Link className="view-switch" to="/estado-negocio">Estado y solicitudes</Link>
-        )}
         {business && (
           <Link
             className={`view-switch ${workspace ? "from-workspace" : ""}`}
@@ -162,7 +159,7 @@ export default function Navbar() {
             onClick={() => setOpen(false)}
           >
             {clientView ? "Volver a mi panel" : "Ver como cliente"}{" "}
-            <span aria-hidden="true">↗</span>
+            <span aria-hidden="true"></span>
           </Link>
         )}
         {user && (!business || workspace) && (

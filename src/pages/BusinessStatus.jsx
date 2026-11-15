@@ -131,7 +131,7 @@ export default function BusinessStatus() {
       )}
       {!negocio && puede_registrar && (
         <Link className="purple-link" to="/registrar-negocio">
-          Registrar mi negocio ↗
+          Registrar mi negocio 
         </Link>
       )}
       <h2 className="moderation-heading">Tus solicitudes</h2>

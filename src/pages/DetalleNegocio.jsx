@@ -1,5 +1,6 @@
 import LocationMap from "../components/LocationMap";
 import FacadeImage from "../components/FacadeImage";
+import { formatBusinessDays } from "../businessDays";
 import { useLab } from "../context";
 
 import { useParams, Link } from "react-router-dom";
@@ -61,7 +62,7 @@ function DetalleNegocio() {
         )}
         <p>
           <Link to={`/videos?negocio=${negocio.id}`}>
-            Ver los videos de este negocio ↗
+            Ver los videos de este negocio 
           </Link>
         </p>
         {negocio.logo && (
@@ -95,6 +96,7 @@ function DetalleNegocio() {
             </a>
           </p>
         )}
+        <p><strong>Días de atención:</strong> {formatBusinessDays(negocio.dias_atencion)}</p>
         {(negocio.hora_apertura || negocio.hora_cierre) && (
           <p>
             <strong>Horario:</strong> {negocio.hora_apertura || "Por confirmar"}{" "}
@@ -104,7 +106,7 @@ function DetalleNegocio() {
         {negocio.enlace_mapa && (
           <p>
             <a href={negocio.enlace_mapa} target="_blank" rel="noreferrer">
-              Ver dirección en el mapa ↗
+              Ver dirección en el mapa 
             </a>
           </p>
         )}

@@ -35,14 +35,14 @@ export default function Dashboard() {
           {loading ? "Cargando…" : business ? `● Negocio ${business.estado}` : "Sin negocio"}
         </Link>
         <Link className="owner-view-business" to={business?.estado === "activo" ? `/negocios/${business.id}` : "/estado-negocio"}>
-          {business?.estado === "activo" ? "Ver mi negocio ↗" : "Estado y solicitudes →"}
+          {business?.estado === "activo" ? "Ver mi negocio" : "Estado y solicitudes →"}
         </Link>
       </div>
     </header>
     {(error || extra.error) && <p role="alert" className="owner-error">{error || extra.error}</p>}
     <div className="owner-metrics">{stats.map(([icon, label, count, to]) => <Link key={label} to={to} className={`owner-metric tone-${icon}`}><span className="owner-icon"><Icon name={icon}/></span><div><strong>{count}</strong><span>{label}</span></div></Link>)}</div>
     <div className="owner-grid">
-      <section className="owner-card"><h2><span className="owner-gold" aria-hidden="true">ϟ</span> Acciones rápidas</h2><div className="owner-actions">{actions.map(([icon,label,to,disabled]) => disabled ? <div className={`owner-action tone-${icon} unavailable`} key={label}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><small>{archived ? "Negocio archivado" : "Requiere negocio"}</small></div> : <Link key={label} to={to} className={`owner-action tone-${icon}`}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><span className="owner-arrow" aria-hidden="true">›</span></Link>)}</div></section>
+      <section className="owner-card"><h2><span className="owner-gold" aria-hidden="true"></span> Acciones rápidas</h2><div className="owner-actions">{actions.map(([icon,label,to,disabled]) => disabled ? <div className={`owner-action tone-${icon} unavailable`} key={label}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><small>{archived ? "Negocio archivado" : "Requiere negocio"}</small></div> : <Link key={label} to={to} className={`owner-action tone-${icon}`}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><span className="owner-arrow" aria-hidden="true">›</span></Link>)}</div></section>
       <section className="owner-card owner-recent"><div className="owner-card-heading"><h2><Icon name="clock"/> Novedades y avisos</h2><Link to="/notificaciones">Ver todo →</Link></div>{extra.pending ? <p role="status">Cargando avisos…</p> : extra.notices.length ? <ul>{extra.notices.map((n) => <li key={n.id}><span className="owner-icon"><Icon name="shop"/></span><div><strong>{n.titulo}</strong><p>{n.mensaje}</p><time dateTime={`${n.fecha}Z`}>{new Date(`${n.fecha}Z`).toLocaleString("es")}</time></div></li>)}</ul> : <div className="owner-empty"><Icon name="clock"/><p>Aún no tienes avisos. Aquí aparecerán las notificaciones sobre tu negocio.</p></div>}</section>
     </div>
   </main>;

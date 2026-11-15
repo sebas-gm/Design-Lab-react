@@ -38,6 +38,18 @@ class BusinessIn(Input):
     enlace_mapa: str = Field(default='', max_length=2048)
     hora_apertura: str = Field(default='', pattern=r'^(?:[01]\d|2[0-3]):[0-5]\d$|^$')
     hora_cierre: str = Field(default='', pattern=r'^(?:[01]\d|2[0-3]):[0-5]\d$|^$')
+    dias_atencion: str = Field(default='', max_length=60)
+
+    @field_validator('dias_atencion')
+    @classmethod
+    def opening_days(cls, value):
+        if not value:
+            return ''
+        order = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
+        days = value.split(',')
+        if len(days) != len(set(days)) or any(day not in order for day in days):
+            raise ValueError('Selecciona días de atención válidos, sin repetirlos')
+        return ','.join(day for day in order if day in days)
     logo: str = Field(default='', max_length=2048)
 
     @field_validator('imagen', 'logo')
