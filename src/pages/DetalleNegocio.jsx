@@ -1,4 +1,5 @@
 import LocationMap from "../components/LocationMap";
+import FacadeImage from "../components/FacadeImage";
 import { useLab } from "../context";
 
 import { useParams, Link } from "react-router-dom";
@@ -46,7 +47,7 @@ function DetalleNegocio() {
       </Link>
 
       <div className="detalle-portada">
-        <img src={imagenNegocio} alt={negocio.nombre} />
+        <FacadeImage key={imagenNegocio} src={imagenNegocio} alt={`Fachada de ${negocio.nombre}`} />
       </div>
 
       <section className="detalle-informacion">

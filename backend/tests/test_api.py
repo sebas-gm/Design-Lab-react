@@ -687,6 +687,23 @@ def test_business_images_dimensions_alpha_and_crop(clients, tmp_path, monkeypatc
     assert send(wide, 'purpose=unknown').status_code == 422
 
 
+def test_description_limits_for_owner_and_admin(clients):
+    owner, admin = clients
+    uid = signup(owner, 'description@example.com').json()['id']
+    make_admin(admin)
+    for client, path, extra in [(owner, '/api/negocios', {}), (admin, '/api/admin/negocios', {'owner_id': uid})]:
+        assert client.post(path, json={**BUSINESS, **extra, 'descripcion': 'x' * 501}).status_code == 422
+    business = owner.post('/api/negocios', json={**BUSINESS, 'descripcion': 'x' * 500})
+    assert business.status_code == 201
+    bid = business.json()['id']
+    product = {'negocioId': bid, 'nombre': 'Producto', 'precio': 10, 'descripcion': 'x' * 501}
+    for client, prefix in [(owner, '/api'), (admin, '/api/admin')]:
+        assert client.post(f'{prefix}/productos', json=product).status_code == 422
+        assert client.put(f'{prefix}/negocios/{bid}', json={**BUSINESS, **({'owner_id': uid} if client is admin else {}), 'descripcion': 'x' * 501}).status_code == 422
+    assert owner.post('/api/productos', json={**product, 'descripcion': 'x' * 500}).status_code == 201
+    assert owner.get('/api/negocios').json()[0]['descripcion'] == 'x' * 500
+
+
 def test_registration_wait_expires_at_exact_deadline():
     from datetime import datetime, timedelta
     from types import SimpleNamespace

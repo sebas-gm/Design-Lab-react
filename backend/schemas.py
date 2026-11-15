@@ -29,7 +29,7 @@ class BusinessIn(Input):
     nombre: str = Field(min_length=1, max_length=120)
     categoria: Literal['Comida', 'Librería', 'Tienda', 'Servicios', 'Otros']
     direccion: str = Field(min_length=1, max_length=255)
-    descripcion: str = Field(min_length=1, max_length=5000)
+    descripcion: str = Field(min_length=1, max_length=500)
     imagen: str = Field(default='', max_length=2048)
     latitud: float | None = Field(default=None, ge=-90, le=90)
     longitud: float | None = Field(default=None, ge=-180, le=180)
@@ -66,7 +66,7 @@ class ProductIn(Input):
     negocioId: int = Field(gt=0)
     nombre: str = Field(min_length=1, max_length=120)
     precio: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
-    descripcion: str = Field(min_length=1, max_length=5000)
+    descripcion: str = Field(min_length=1, max_length=500)
     imagen: str = Field(default='', max_length=2048)
     promocion: bool = False
     image_url = field_validator('imagen')(BusinessIn.image_url.__func__)

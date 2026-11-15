@@ -30,6 +30,7 @@ export default function EntityForm({
     ? availableBusinesses
     : negocios.filter((n) => n.owner_id === user.id);
   const [error, setError] = useState("");
+  const [description, setDescription] = useState(initial?.descripcion || "");
   const [busy, setBusy] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [logo, setLogo] = useState(null);
@@ -37,6 +38,10 @@ export default function EntityForm({
 
   async function submit(event) {
     event.preventDefault();
+    if (description.trim().length > 500) {
+      setError("La descripción no puede superar los 500 caracteres.");
+      return;
+    }
     const entity = business ? "negocio" : "producto";
     const question = initial
       ? `¿Quieres guardar los cambios de este ${entity}?`
@@ -229,12 +234,15 @@ export default function EntityForm({
           Descripción *
           <textarea
             name="descripcion"
-            defaultValue={initial?.descripcion}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
             rows="3"
-            maxLength="5000"
+            maxLength="500"
+            aria-describedby="description-limit"
             placeholder="Cuéntanos qué ofrece tu negocio"
             required
           />
+          <small id="description-limit" role="status">{description.length} / 500 caracteres{description.length > 500 ? ". Esta descripción anterior supera el límite; redúcela antes de guardar." : ""}</small>
         </label>
         {business && (
           <details className="location-details">
