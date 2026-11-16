@@ -43,6 +43,36 @@ def published_fixture(business_id):
         db.commit()
 
 
+def test_video_search_platform_and_pagination(clients):
+    owner, other = clients
+    signup(owner, 'gallery-owner@example.com')
+    signup(other, 'gallery-other@example.com')
+    bid = owner.post('/api/negocios', json={**BUSINESS, 'nombre': 'Galeria Sur'}).json()['id']
+    published_fixture(bid)
+    from sqlalchemy.orm import Session
+    from backend.models import Video
+    with Session(engine) as db:
+        db.add(Video(negocioId=bid, titulo='Agujas artesanales', url='https://youtu.be/M7lc1UVf-VE'))
+        db.add(Video(negocioId=bid, titulo='Oferta 100% real', url='https://www.tiktok.com/@local/video/6718335390845095173'))
+        for number in range(13):
+            db.add(Video(negocioId=bid, titulo=f'Novedad {number}', url='https://youtu.be/M7lc1UVf-VE'))
+        db.commit()
+    assert len(owner.get('/api/videos').json()) == 12
+    assert len(owner.get('/api/videos?offset=12').json()) == 3
+    found = owner.get('/api/videos', params={'q': 'AGUJAS'}).json()
+    assert [v['titulo'] for v in found] == ['Agujas artesanales']
+    assert len(owner.get('/api/videos', params={'q': 'Galeria Sur', 'plataforma': 'YouTube', 'negocio_id': bid}).json()) == 12
+    assert len(owner.get('/api/videos', params={'q': 'Galeria Sur', 'plataforma': 'YouTube', 'negocio_id': bid, 'offset': 12}).json()) == 2
+    tiktok = owner.get('/api/videos', params={'plataforma': 'TikTok', 'q': '%', 'negocio_id': bid}).json()
+    assert [v['titulo'] for v in tiktok] == ['Oferta 100% real']
+    assert owner.get('/api/videos', params={'q': '_'}).json() == []
+    assert owner.get('/api/videos', params={'plataforma': 'Vimeo'}).status_code == 422
+    assert owner.get('/api/videos', params={'q': 'a' * 161}).status_code == 422
+    hidden = other.post('/api/negocios', json=BUSINESS).json()['id']
+    other.post('/api/videos', json={'negocioId': hidden, 'titulo': 'Pendiente privado', 'url': 'https://youtu.be/M7lc1UVf-VE'})
+    assert owner.get('/api/videos', params={'q': 'Pendiente privado'}).json() == []
+
+
 def test_auth_and_session(clients):
     client, _ = clients
     assert client.get('/api/auth/me').status_code == 401

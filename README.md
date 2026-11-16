@@ -115,6 +115,12 @@ Respaldo previo a los cambios: commit `97fed42`, etiqueta `respaldo-inicial`. Pa
 
 ## Barra lateral y videos
 
+La galería pública `/videos` combina búsqueda por título o negocio, filtro de negocio y plataforma. La consulta GET `/api/videos` acepta `q` (hasta 160 caracteres), `plataforma` (`TikTok` o `YouTube`), `negocio_id` y `offset`; los filtros se aplican antes de paginar en grupos de 12. No requiere cambios en las tablas.
+
+Las miniaturas de YouTube se solicitan al servidor de imágenes de la plataforma usando el ID del mismo video; si no cargan se muestra una tarjeta neutra. TikTok usa esa tarjeta cuando no hay miniatura disponible. No se sustituyen miniaturas con fachadas ni se inventan duraciones o descripciones. Solo los propietarios con permisos ven el acceso para compartir.
+
+La reproducción pública se abre en un diálogo con un único iframe. Escape, cerrar o cambiar de filtro lo desmonta. Ante errores de TikTok o fallo de carga se ofrece el video original; “Mostrar alternativa” también permite salir de un incrustado bloqueado que no comunica su error. Las restricciones de las plataformas se respetan. Referencias: [reproductor TikTok](https://developers.tiktok.com/docs/en/embed-player) y [miniaturas de YouTube](https://developers.google.com/youtube/data/getting-started). El panel del propietario conserva su interfaz.
+
 ### Administración del sistema
 
 #### Moderación, avisos y revisión

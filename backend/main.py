@@ -3,7 +3,7 @@ import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, text, or_
@@ -318,12 +318,18 @@ def video_data(item):
 
 
 @app.get('/api/videos')
-def list_videos(negocio_id: int | None = None, offset: int = 0, user=Depends(current_user), db=Depends(get_db)):
+def list_videos(negocio_id: int | None = None, offset: int = 0, q: str = Query('', max_length=160), plataforma: str | None = Query(None, pattern='^(TikTok|YouTube)$'), user=Depends(current_user), db=Depends(get_db)):
     if offset < 0:
         raise HTTPException(422, 'Página inválida')
     query = select(Video).join(Business).where(or_(Business.estado == 'activo', Business.owner_id == user.id)).order_by(Video.id.desc())
     if negocio_id is not None:
         query = query.where(Video.negocioId == negocio_id)
+    if q.strip():
+        query = query.where(or_(Video.titulo.icontains(q.strip(), autoescape=True), Business.nombre.icontains(q.strip(), autoescape=True)))
+    if plataforma is not None:
+        # VideoIn only accepts canonical YouTube and TikTok URLs.
+        tiktok = Video.url.contains('tiktok.com/')
+        query = query.where(tiktok if plataforma == 'TikTok' else ~tiktok)
     return [video_data(item) for item in db.scalars(query.offset(offset).limit(12))]
 
 

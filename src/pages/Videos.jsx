@@ -6,8 +6,14 @@ import VideoCard from "../components/VideoCard";
 import FormModal from "../components/FormModal";
 import { useConfirm } from "../confirmation";
 import "../styles/videos.css";
+import PublicVideos from './PublicVideos';
 
 export default function Videos({ manage = false }) {
+  return manage ? <ManageVideos /> : <PublicVideos />;
+}
+
+function ManageVideos() {
+  const manage = true;
   const confirm = useConfirm();
   const { negocios, user } = useLab();
   const mine = negocios.filter((n) => n.owner_id === user?.id);
