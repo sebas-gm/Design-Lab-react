@@ -2,7 +2,19 @@
 import { Link } from 'react-router-dom';
 import '../styles/cardNegocio.css';
 
-function CardNegocio({ id, nombre, categoria, descripcion, imagen, opening }) {
+function CardNegocio({ id, nombre, categoria, descripcion, imagen, opening, hora_apertura, hora_cierre, variant }) {
+  if (variant === 'compact') return (
+    <article className="home-business-card">
+      <img className="home-business-photo" src={imagen || '/product-placeholder.svg'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/product-placeholder.svg')) e.currentTarget.src = '/product-placeholder.svg'; }} />
+      <div className="home-business-copy">
+        {categoria && <span className="home-business-category">{categoria}</span>}
+        <h3>{nombre}</h3>
+        {descripcion && <p>{descripcion}</p>}
+        {(opening === 'open' || opening === 'closed') && <div className="home-business-hours"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 6v7l4 2" /></svg>{hora_apertura} – {hora_cierre}</span><span className={`home-business-opening is-${opening}`}>{opening === 'open' ? 'Abierto ahora' : 'Cerrado ahora'}</span></div>}
+        <Link to={`/negocios/${id}`} className="home-business-link">Ver negocio <span aria-hidden="true">→</span></Link>
+      </div>
+    </article>
+  );
   const imagenes = {
     Comida: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=600',
     Librería: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=600',
