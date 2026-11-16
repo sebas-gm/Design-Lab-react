@@ -1,71 +1,59 @@
-
-.login {
-  max-width: 500px;
-  margin: 40px auto;
-  padding: 30px;
-  background-color: rgb(255, 255, 255);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+/* Shared presentation for login and account creation only. */
+.auth-page {
+  width: 100%; min-width: 0; padding: 30px 20px 40px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 24px; position: relative; isolation: isolate; min-height: 100svh;
 }
-
-.login h1 {
-  text-align: center;
-  margin-bottom: 10px;
+.auth-page::before, .auth-page::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  bottom: 0; left: 0; right: 0; height: 190px;
+  background: #8440cf42; clip-path: polygon(0 25%, 20% 65%, 45% 85%, 70% 70%, 100% 15%, 100% 100%, 0 100%);
 }
-
-.login > p {
-  text-align: center;
-  margin-bottom: 25px;
+.auth-page::after { height: 125px; background: #aa66e64d; clip-path: polygon(0 80%, 25% 90%, 55% 60%, 80% 45%, 100% 0, 100% 100%, 0 100%); }
+.auth-page .auth-brand { display: flex; align-items: center; gap: 13px; text-decoration: none; color: #fff; }
+.auth-brand-icon { width: 58px; height: 58px; padding: 5px; border-radius: 16px; background: #efe1ffdb; }
+.auth-brand strong { display: block; font-size: 34px; letter-spacing: -1.2px; line-height: 1.1; }
+.auth-brand small { display: block; font-size: 13px; margin-top: 5px; color: #eee2ff; }
+.auth-page .login {
+  width: 100%; max-width: 460px; margin: 0; padding: 26px 30px 28px;
+  position: relative; isolation: isolate; overflow: hidden;
+  background: linear-gradient(135deg, #fcfaffeb, #eee5f4dd);
+  -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+  border: 1px solid #eee0ffb3; border-radius: 24px; box-shadow: 0 20px 65px #10041b45;
+  color: #211343;
 }
-
-.login form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.auth-page .login::before { content: ""; position: absolute; top: 0; right: 0; width: 145px; height: 100px; background: #b17bef19; clip-path: polygon(0 0, 100% 0, 100% 100%); pointer-events: none; z-index: -1; }
+.login .entry-back { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; margin-bottom: 24px; color: #7023ca; text-decoration: none; }
+.login svg { width: 21px; height: 21px; flex-shrink: 0; }
+.login .entry-back svg { width: 17px; height: 17px; }
+.login h1 { font-size: clamp(26px, 4vw, 31px); letter-spacing: -.8px; line-height: 1.2; text-align: center; margin-bottom: 9px; color: #211343; }
+.login > p { text-align: center; font-size: 14px; line-height: 1.5; color: #55446b; margin-bottom: 25px; }
+.login form { display: flex; flex-direction: column; gap: 14px; }
+.login label { font-size: 12px; color: #514164; font-weight: 600; }
+.auth-field { display: flex; align-items: center; gap: 10px; margin-top: 6px; min-height: 48px; padding: 0 13px; border: 1px solid #d9c7ee; background: #ffffff80; border-radius: 12px; color: #842ce2; transition: border-color .18s, box-shadow .18s; }
+.auth-field:focus-within { border-color: #943ce2; box-shadow: 0 0 0 3px #9445de16; }
+.auth-field input { flex: 1; min-width: 0; width: 100%; padding: 13px 0; border: 0; outline: none; background: transparent; font-size: 14px; color: #271740; box-shadow: none; }
+.auth-field input::placeholder { color: #897a99; opacity: 1; }
+.auth-field input:focus-visible { outline: none; }
+.login .auth-reveal { display: grid; place-items: center; flex: 0 0 32px; min-height: 36px; margin: 0 -5px 0 0; padding: 5px; border: 0; background: transparent; color: #746180; border-radius: 7px; }
+.login .auth-reveal:hover { color: #7023ca; background: #e5d3f54d; }
+.auth-password-help { display: flex; align-items: center; gap: 6px; margin-top: -6px; font-size: 12px; color: #635174; }
+.auth-password-help svg { width: 15px; height: 15px; }
+.login .auth-submit { width: 100%; margin-top: 10px; padding: 13px 16px; min-height: 46px; font-size: 16px; font-weight: 700; background: linear-gradient(115deg, #8528df, #6013b9); color: #fff; border: none; border-radius: 12px; box-shadow: 0 4px 10px #681fbd24; transition: box-shadow .18s, transform .18s; }
+.login .auth-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px #681fbd38; }
+.login .auth-submit:disabled { cursor: wait; }
+.login .auth-error { margin: 0; padding: 10px 12px; background: #fff1f4; border: 1px solid #e9bccb; border-radius: 9px; font-size: 13px; color: #922546; }
+.login .auth-switch { margin-top: 28px; text-align: center; }
+.auth-switch p { display: flex; align-items: center; gap: 12px; margin: 0 0 18px; font-size: 13px; color: #665179; }
+.auth-switch p::before, .auth-switch p::after { content: ""; flex: 1; height: 1px; background: #dccced; }
+.auth-switch a { color: #7023ca; font-size: 15px; font-weight: 700; }
+.auth-register-link { display: block; padding: 12px; border: 1px solid #9242dc; border-radius: 12px; text-decoration: none; background: #ffffff45; transition: background .18s; }
+.auth-register-link:hover { background: #e6d4fa; }
+.auth-login-link { display: inline-block; padding: 4px 10px; text-underline-offset: 3px; }
+@media (max-width: 550px) {
+  .auth-page { padding: 22px 16px 28px; gap: 18px; }
+  .auth-page .login { padding: 23px 21px 25px; border-radius: 20px; }
+  .auth-brand strong { font-size: 30px; }
+  .auth-brand-icon { width: 50px; height: 50px; }
 }
-
-.login input {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 15px;
-}
-
-.login input:focus {
-  outline: none;
-  border-color: #6c2bd9;
-}
-
-.login button {
-  background-color: #6c2bd9;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.login button:hover {
-  background-color: #4c1d95;
-}
-
-.login a {
-  color: #6c2bd9;
-  text-decoration: none;
-}
-
-.login a:hover {
-  text-decoration: underline;
-}
-
-.login > .auth-switch {
-  margin-top: 32px;
-  margin-bottom: 0;
-}
-.auth-switch a {
-  display: inline-block;
-  padding: 8px 12px;
-}
+@media (prefers-reduced-motion: reduce) { .login .auth-submit, .auth-field, .auth-register-link { transition: none; } }

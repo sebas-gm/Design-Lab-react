@@ -88,7 +88,7 @@
   display: grid;
   place-items: center;
   background: linear-gradient(150deg, #9578ff, #6945c6);
-  border: 1px solid #c9acff77;
+  border: none;
   color: #f9f5ff;
   border-radius: 50%;
   width: 100%;

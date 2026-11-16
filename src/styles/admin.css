@@ -233,7 +233,7 @@
   object-fit: cover;
   padding: 0;
   background: transparent;
-  border: 1px solid #29252f;
+  border: none;
   border-radius: 50%;
   box-shadow: 0 5px 20px #20133c30;
 }
