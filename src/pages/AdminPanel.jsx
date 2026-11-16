@@ -8,6 +8,7 @@ import AdminUserForm from "../components/AdminUserForm";
 import AdminOverview from "../components/AdminOverview";
 import AdminReports from "../components/AdminReports";
 import AdminPublications from "../components/AdminPublications";
+import AdminHistory from "../components/AdminHistory";
 import FormModal from "../components/FormModal";
 import { registrationWaiting } from "../registration";
 import "../styles/admin.css";
@@ -222,7 +223,7 @@ export default function AdminPanel() {
     negocios: "Todos los negocios",
     usuarios: "Usuarios",
     contenido: "Contenido",
-    historial: "Historial de administración",
+    historial: "Historial de actividad",
     solicitudes: "Solicitudes de propietarios",
     reportes: "Reportes de usuarios",
     publicaciones: "Publicaciones por revisar",
@@ -234,11 +235,12 @@ export default function AdminPanel() {
         <div>
           <span className="eyebrow">Navishop · Administración general</span>
           <h1>{titles[section] || titles[""]}</h1>
-          <p>Gestiona la plataforma con permisos de administrador.</p>
+          <p>{section === "historial" ? "Consulta y supervisa las acciones realizadas en la plataforma." : "Gestiona la plataforma con permisos de administrador."}</p>
         </div>
         <button
           disabled={busy || loading}
           onClick={() => {
+            if (section === "historial") window.dispatchEvent(new Event("navishop:history-refresh"));
             if (section === "reportes") window.dispatchEvent(new Event('navishop:reports-refresh'));
             if (section === "publicaciones") window.dispatchEvent(new Event('navishop:publications-refresh'));
             load().catch((e) => setError(e.message));
@@ -633,34 +635,7 @@ export default function AdminPanel() {
               {!data.solicitudes.length && <p>No hay solicitudes.</p>}
             </div>
           )}
-          {section === "historial" && (
-            <>
-              <p>
-                Últimas 100 acciones administrativas. Las operaciones fallidas
-                no se registran como realizadas.
-              </p>
-              <div className="admin-list">
-                {data.historial.map((log) => (
-                  <article key={log.id}>
-                    <div>
-                      <h3>
-                        {log.accion.replaceAll("_", " ")} · {log.recurso} #
-                        {log.recurso_id}
-                      </h3>
-                      <p>
-                        {log.administrador} ·{" "}
-                        {new Date(`${log.fecha}Z`).toLocaleString()}
-                      </p>
-                      <pre>{JSON.stringify(log.detalle, null, 2)}</pre>
-                    </div>
-                  </article>
-                ))}
-                {!data.historial.length && (
-                  <p>Aún no hay acciones administrativas.</p>
-                )}
-              </div>
-            </>
-          )}
+          {section === "historial" && <AdminHistory query={query} onQuery={setQuery} />}
         </>
       )}
     </main>

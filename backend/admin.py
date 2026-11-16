@@ -1,6 +1,8 @@
 """System administration. No public endpoint can grant the admin role."""
 import json
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date
+from typing import Literal
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -12,6 +14,7 @@ from backend.main import current_user, now, serialize, video_data, public_user
 from backend.schemas import Register
 from backend.security import hash_password
 from backend.registration import check_registration_wait
+from backend.activity_history import activity_history
 
 
 def admin_user(user=Depends(current_user)):
@@ -266,6 +269,15 @@ def delete_video(item_id: int, user=Depends(admin_user), db=Depends(get_db)):
 def history(db=Depends(get_db)):
     rows = db.execute(select(AuditLog, User.nombre).join(User, User.id == AuditLog.actor_id).order_by(AuditLog.id.desc()).limit(100))
     return [{**serialize(log), 'administrador': name, 'detalle': json.loads(log.detalle)} for log, name in rows]
+
+
+@router.get('/historial/consulta')
+def query_history(q: str = Query('', max_length=160), action: str = Query('', max_length=40),
+                  start: date | None = None, end: date | None = None,
+                  order: Literal['recent', 'oldest'] = 'recent',
+                  page: int = Query(1, ge=1), size: int = Query(10, ge=1, le=100),
+                  export: bool = False, db=Depends(get_db)):
+    return activity_history(db, q, action, start, end, order, page, size, export)
 
 
 @router.get('/solicitudes')
