@@ -4,6 +4,12 @@ import '../styles/cardProducto.css';
 import ReportLink from './ReportLink';
 
 function CardProducto({ id, imagen, nombre, precio, descripcion, promocion, negocioId, nombreNegocio, hideBusinessLink = false, variant }) {
+  if (variant === 'catalog') return (
+    <article className="catalog-product-card">
+      <div className="catalog-product-photo"><img src={imagen || '/product-placeholder.svg'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/product-placeholder.svg')) e.currentTarget.src = '/product-placeholder.svg'; }}/>{promocion && <span className="catalog-product-promo">Promoción</span>}</div>
+      <div className="catalog-product-body"><h3>{nombre}</h3>{descripcion && <p>{descripcion}</p>}<strong className="catalog-product-price">Bs. {precio}</strong>{nombreNegocio && <span className="catalog-product-business">{nombreNegocio}</span>}<Link className="catalog-product-link" to={`/negocios/${negocioId}`}>Ver negocio <span aria-hidden="true">→</span></Link><ReportLink tipo="producto" id={id} negocioId={negocioId} showIcon/></div>
+    </article>
+  );
   if (variant === 'promotion') return (
     <article className="promotion-card">
       <div className="promotion-card-photo"><img src={imagen || '/product-placeholder.svg'} alt={nombre} loading="lazy" onError={(event) => { if (!event.currentTarget.src.endsWith('/product-placeholder.svg')) event.currentTarget.src = '/product-placeholder.svg'; }} /><span className="promotion-card-label"><span aria-hidden="true"></span> Promoción</span></div>

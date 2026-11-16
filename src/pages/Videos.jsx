@@ -12,6 +12,7 @@ export default function Videos({ manage = false }) {
   const { negocios, user } = useLab();
   const mine = negocios.filter((n) => n.owner_id === user?.id);
   const [videos, setVideos] = useState([]);
+  const [activeVideo, setActiveVideo] = useState(null);
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +34,7 @@ export default function Videos({ manage = false }) {
       .then((items) => {
         if (active) {
           setVideos(items);
+          setActiveVideo(null);
           setMore(!manage && items.length === 12);
           setError("");
         }
@@ -134,6 +136,8 @@ export default function Videos({ manage = false }) {
             <VideoCard
               key={video.id}
               video={video}
+              playing={activeVideo === `${video.id}:${video.embed_url}`}
+              onPlay={() => setActiveVideo(`${video.id}:${video.embed_url}`)}
               nombreNegocio={mine.find((n) => n.id === video.negocioId)?.nombre}
             />
           ))}
@@ -250,6 +254,7 @@ export default function Videos({ manage = false }) {
             value={business}
             onChange={(e) => {
               setBusiness(e.target.value);
+              setActiveVideo(null);
               setLoading(true);
               setVideos([]);
             }}
@@ -289,6 +294,8 @@ export default function Videos({ manage = false }) {
           <VideoCard
             key={video.id}
             video={video}
+            playing={activeVideo === `${video.id}:${video.embed_url}`}
+            onPlay={() => setActiveVideo(`${video.id}:${video.embed_url}`)}
             nombreNegocio={
               negocios.find((n) => n.id === video.negocioId)?.nombre
             }

@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 
-export default function VideoCard({ video, nombreNegocio, children }) {
-  const [playing, setPlaying] = useState(false);
+export default function VideoCard({ video, nombreNegocio, children, playing = false, onPlay }) {
   return (
     <article className="video-card">
       <div
@@ -18,7 +16,7 @@ export default function VideoCard({ video, nombreNegocio, children }) {
             referrerPolicy="strict-origin-when-cross-origin"
           />
         ) : (
-          <button className="video-cover" onClick={() => setPlaying(true)}>
+          <button type="button" className="video-cover" aria-label={`Ver video: ${video.titulo}`} onClick={onPlay}>
             <span className="play-circle">▶</span>
             <strong>Ver video</strong>
             <small>{video.plataforma}</small>

@@ -1,8 +1,26 @@
 
 import { Link } from 'react-router-dom';
 import '../styles/cardNegocio.css';
+import HomeIcon from './HomeIcon';
 
 function CardNegocio({ id, nombre, categoria, descripcion, imagen, opening, hora_apertura, hora_cierre, variant }) {
+  if (variant === 'catalog') return (
+    <article className="catalog-business-card">
+      <img className="catalog-business-image" src={imagen || '/product-placeholder.svg'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/product-placeholder.svg')) e.currentTarget.src = '/product-placeholder.svg'; }} />
+      <div className="catalog-business-body">
+        {categoria && <span className="catalog-business-category"><HomeIcon name={categoria}/>{categoria}</span>}
+        <h3>{nombre}</h3>
+        {descripcion && <p>{descripcion}</p>}
+        <div className="catalog-business-footer">
+          <div className="catalog-business-schedule">
+            {hora_apertura && hora_cierre && <span className="catalog-business-hours"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v7l4 2"/></svg>{hora_apertura} – {hora_cierre}</span>}
+            {(opening === 'open' || opening === 'closed') && <span className={`catalog-business-opening is-${opening}`}>{opening === 'open' ? 'Abierto ahora' : 'Cerrado ahora'}</span>}
+          </div>
+          <Link className="catalog-business-link" to={`/negocios/${id}`}>Ver negocio <span aria-hidden="true">→</span></Link>
+        </div>
+      </div>
+    </article>
+  );
   if (variant === 'compact') return (
     <article className="home-business-card">
       <img className="home-business-photo" src={imagen || '/product-placeholder.svg'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/product-placeholder.svg')) e.currentTarget.src = '/product-placeholder.svg'; }} />
