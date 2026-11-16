@@ -1,0 +1,20 @@
+.navishop-icon { display: block; object-fit: contain; flex-shrink: 0; }
+.topbar .brand-symbol.navishop-icon, .admin-sidebar-brand .brand-symbol.navishop-icon { display: block; padding: 0; border: none; }
+.welcome-layout .welcome-mark.navishop-icon {
+  display: block;
+  padding: 0;
+  transform: none;
+  overflow: hidden;
+  background: #d8b9f080;
+  border: none;
+  box-shadow: none;
+}
+@media (max-width: 550px) {
+  .topbar .brand-symbol.navishop-icon { width: 30px; height: 30px; border-radius: 9px; }
+  .workspace-mode .topbar .brand > span { display: none; }
+  .workspace-mode .topbar .brand { flex: 1; min-width: 30px; }
+}
+@media (max-width: 400px) {
+  .app-frame.explore-mode .topbar .brand { display: flex; flex: 0 0 auto; min-width: 30px; }
+  .app-frame.explore-mode .topbar .brand > span { display: none; }
+}

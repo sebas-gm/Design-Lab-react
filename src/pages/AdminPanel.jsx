@@ -524,8 +524,8 @@ export default function AdminPanel() {
                 {data.productos.filter(matches).map((p) => (
                   <article key={p.id} className="admin-product-card">
                     <div className="admin-product-identity">
-                      <img className="admin-product-image" src={p.imagen || "/product-placeholder.svg"} alt={p.nombre} loading="lazy"
-                        onError={(event) => { event.currentTarget.onerror = null; if (!event.currentTarget.src.endsWith('/product-placeholder.svg')) event.currentTarget.src = '/product-placeholder.svg'; }} />
+                      <img className="admin-product-image" src={p.imagen || "/icon-navishop.png"} alt={p.nombre} loading="lazy"
+                        onError={(event) => { event.currentTarget.onerror = null; if (!event.currentTarget.src.endsWith('/icon-navishop.png')) event.currentTarget.src = '/icon-navishop.png'; }} />
                     <div className="admin-product-details">
                       <h3>{p.nombre}</h3>
                       <p>

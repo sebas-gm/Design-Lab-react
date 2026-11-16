@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useLab } from "../context";
+import NavishopIcon from "../components/NavishopIcon";
 
 export default function Welcome() {
   const { user, ready } = useLab();
@@ -15,28 +16,7 @@ export default function Welcome() {
         <span className="welcome-badge">
           DESCUBRE · CONECTA · APOYA LO LOCAL
         </span>
-        <div className="welcome-mark" aria-hidden="true">
-          <svg viewBox="0 0 80 80" fill="none">
-            <path
-              d="M40 69S17 49 17 30a23 23 0 0 1 46 0C63 49 40 69 40 69Z"
-              stroke="currentColor"
-              strokeWidth="3"
-            />
-            <circle
-              cx="40"
-              cy="30"
-              r="11"
-              stroke="currentColor"
-              strokeWidth="3"
-            />
-            <path
-              d="M40 12v6m0 24v6M22 30h6m24 0h6"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
+        <NavishopIcon className="welcome-mark" alt="Icono de Navishop" />
         <h1 id="welcome-title">
           Navi<span>shop</span>
         </h1>

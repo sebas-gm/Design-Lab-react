@@ -6,7 +6,7 @@ import HomeIcon from './HomeIcon';
 function CardNegocio({ id, nombre, categoria, descripcion, imagen, opening, hora_apertura, hora_cierre, variant }) {
   if (variant === 'catalog') return (
     <article className="catalog-business-card">
-      <img className="catalog-business-image" src={imagen || '/product-placeholder.svg'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/product-placeholder.svg')) e.currentTarget.src = '/product-placeholder.svg'; }} />
+      <img className="catalog-business-image" src={imagen || '/icon-navishop.png'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/icon-navishop.png')) e.currentTarget.src = '/icon-navishop.png'; }} />
       <div className="catalog-business-body">
         {categoria && <span className="catalog-business-category"><HomeIcon name={categoria}/>{categoria}</span>}
         <h3>{nombre}</h3>
@@ -23,7 +23,7 @@ function CardNegocio({ id, nombre, categoria, descripcion, imagen, opening, hora
   );
   if (variant === 'compact') return (
     <article className="home-business-card">
-      <img className="home-business-photo" src={imagen || '/product-placeholder.svg'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/product-placeholder.svg')) e.currentTarget.src = '/product-placeholder.svg'; }} />
+      <img className="home-business-photo" src={imagen || '/icon-navishop.png'} alt={nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/icon-navishop.png')) e.currentTarget.src = '/icon-navishop.png'; }} />
       <div className="home-business-copy">
         {categoria && <span className="home-business-category">{categoria}</span>}
         <h3>{nombre}</h3>
@@ -46,7 +46,7 @@ function CardNegocio({ id, nombre, categoria, descripcion, imagen, opening, hora
     <div className="card-negocio">
       <img
         loading="lazy"
-        onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = "/product-placeholder.svg"; }}
+        onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = "/icon-navishop.png"; }}
         src={imagenNegocio}
         alt={nombre}
         className="card-negocio-imagen"

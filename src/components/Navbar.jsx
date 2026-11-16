@@ -4,6 +4,7 @@ import { useLab } from "../context";
 import { api } from "../api";
 import { useConfirm } from "../confirmation";
 import { accountHome, isClientView } from "../navigation";
+import NavishopIcon from './NavishopIcon';
 import "../styles/navbar.css";
 
 const publicLinks = [
@@ -126,9 +127,7 @@ export default function Navbar() {
           </button>
         )}
         <Link to={clientView ? "/inicio" : accountHome(user)} className="brand">
-          <span className="brand-symbol">
-            N<span>•</span>
-          </span>
+          <NavishopIcon className="brand-symbol" />
           <span>
             Navishop
             <small>
@@ -234,7 +233,7 @@ export default function Navbar() {
         <aside id="sidebar" className={`sidebar ${open ? "is-open" : ""}`}>
           {user?.is_admin && (
             <Link to="/admin" className="admin-sidebar-brand" onClick={() => setOpen(false)}>
-              <span className="brand-symbol" aria-hidden="true">N<span>•</span></span>
+              <NavishopIcon className="brand-symbol" />
               <span>Navishop</span>
             </Link>
           )}
