@@ -21,12 +21,14 @@ function BusinessIcon({ name }) {
     shop: 'M4 10v11h16V10M2 10l3-7h14l3 7H2ZM9 21v-7h6v7',
     play: 'M8 4v16l12-8L8 4Z',
     box: 'M12 2 3 7v10l9 5 9-5V7l-9-5ZM3 7l9 5 9-5M12 12v10',
+    arrow: 'M19 12H5m6-6-6 6 6 6',
+    search: 'M21 21l-6-6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
+    tag: 'M3 3h8l10 10-8 8L3 11V3Zm4 4h.01',
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]} /></svg>;
 }
 
-export default function DetalleNegocio() {
-  const { id } = useParams();
+function BusinessDetail({ id }) {
   const { negocios, productos, loading, error, refresh } = useLab();
   const time = useCatalogTime();
   const [search, setSearch] = useState('');
@@ -34,7 +36,7 @@ export default function DetalleNegocio() {
   const business = negocios.find((item) => item.id === Number(id));
   if (loading && !business) return <main className="detalle-negocio"><p role="status">Cargando negocio…</p></main>;
   if (error) return <main className="detalle-negocio"><p role="alert">{error}</p><button onClick={refresh}>Reintentar</button></main>;
-  if (!business) return <main className="detalle-negocio"><h1>Negocio no encontrado</h1><p>Puede que ya no esté disponible en el catálogo.</p><Link className="volver-negocios" to="/negocios">⬅ Volver a negocios</Link></main>;
+  if (!business) return <main className="detalle-negocio"><h1>Negocio no encontrado</h1><p>Puede que ya no esté disponible en el catálogo.</p><Link className="volver-negocios" to="/negocios"><BusinessIcon name="arrow" />Volver a negocios</Link></main>;
 
   const catalog = productos.filter((p) => p.negocioId === business.id);
   const normalize = (text) => (text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -42,42 +44,73 @@ export default function DetalleNegocio() {
   const promotions = catalog.filter((p) => p.promocion).length;
   const opening = businessOpening(business, time);
   const hasMap = Boolean(googleMapsEmbed(business.mapa_embed || '')) || (business.latitud != null && business.longitud != null);
+  const phone = (business.telefono || '').replace(/[^+\d]/g, '');
+  const hours = business.hora_apertura && business.hora_cierre
+    ? `${business.hora_apertura} – ${business.hora_cierre}`
+    : business.hora_apertura ? `Abre a las ${business.hora_apertura}` : business.hora_cierre ? `Cierra a las ${business.hora_cierre}` : null;
   const info = [
-    ['pin', 'Dirección', business.direccion || 'Sin especificar'],
-    ['phone', 'Teléfono / WhatsApp', business.telefono || 'Sin especificar', business.telefono ? `tel:${business.telefono.replace(/[^+\d]/g, '')}` : null],
-    ['mail', 'Correo', business.correo_contacto || 'Sin especificar', business.correo_contacto ? `mailto:${business.correo_contacto}` : null],
-    ['calendar', 'Días de atención', formatBusinessDays(business.dias_atencion)],
-    ['clock', 'Horario', business.hora_apertura || business.hora_cierre ? `${business.hora_apertura || 'Por confirmar'} – ${business.hora_cierre || 'Por confirmar'}` : 'Sin especificar'],
-  ];
+    ['pin', 'Dirección', business.direccion],
+    ['phone', 'Teléfono / WhatsApp', phone && business.telefono, phone ? `tel:${phone}` : null],
+    ['mail', 'Correo electrónico', business.correo_contacto, business.correo_contacto ? `mailto:${business.correo_contacto}` : null],
+    ['calendar', 'Días de atención', business.dias_atencion ? formatBusinessDays(business.dias_atencion) : null],
+    ['clock', 'Horario de atención', hours],
+  ].filter(([, , text]) => text?.trim());
+
   return (
     <main className="detalle-negocio business-public-page">
-      <Link to="/negocios" className="volver-negocios">⬅ Volver a negocios</Link>
+      <Link to="/negocios" className="volver-negocios"><BusinessIcon name="arrow" />Volver a negocios</Link>
       <section className="business-public-profile" aria-label={`Información de ${business.nombre}`}>
-        <div className="business-public-cover">
-          {business.imagen ? <FacadeImage key={business.imagen} src={business.imagen} alt={`Fachada de ${business.nombre}`} /> : <div className="business-public-no-photo"><BusinessIcon name="shop" /><span>Conoce nuestro negocio</span></div>}
-          <svg className="business-public-wave" viewBox="0 0 1200 85" preserveAspectRatio="none" aria-hidden="true"><path d="M0 50C160-20 220 90 440 45S760 55 920 20s170-30 280 10v55H0Z" fill="#c9a1ef" fillOpacity=".85"/><path d="M0 66C200 25 260 77 450 53s300 43 500 1 190-22 250 1v30H0Z" fill="#fcfaff"/></svg>
+        <div className={`business-public-cover${business.imagen ? '' : ' without-photo'}`}>
+          {business.imagen ? <FacadeImage key={business.imagen} src={business.imagen} alt={`Fachada de ${business.nombre}`} /> : <div className="business-public-no-photo"><BusinessIcon name="shop" /><span>Conoce {business.nombre}</span></div>}
+          <svg className="business-public-wave" viewBox="0 0 1200 85" preserveAspectRatio="none" aria-hidden="true"><path d="M0 50C160-20 220 90 440 45S760 55 920 20s170-30 280 10v55H0Z" fill="#d5b5f3"/><path d="M0 66C200 25 260 77 450 53s300 43 500 1 190-22 250 1v30H0Z" fill="#ffffff"/></svg>
         </div>
         <div className="business-public-summary">
           <div className="business-public-brand">
             <span className="business-public-logo"><span aria-hidden="true">{business.nombre[0]}</span>{business.logo && <img src={business.logo} alt={`Logo de ${business.nombre}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}</span>
-            <div className="business-public-copy"><div className="business-public-badges"><span className="business-public-category"><BusinessIcon name="shop" />{business.categoria}</span><span className={`business-opening opening-${opening}`}>{opening === 'open' ? 'Abierto ahora' : opening === 'closed' ? 'Cerrado ahora' : 'Horario sin especificar'}</span></div><h1>{business.nombre}</h1><p>{business.descripcion}</p></div>
+            <div className="business-public-copy">
+              <div className="business-public-badges">
+                {business.categoria && <span className="business-public-category"><BusinessIcon name="shop" />{business.categoria}</span>}
+                {opening !== 'unknown' && <span className={`business-public-opening is-${opening}`}><span />{opening === 'open' ? 'Abierto ahora' : 'Cerrado ahora'}</span>}
+                {opening === 'unknown' && business.estado === 'activo' && <span className="business-public-status">Negocio activo</span>}
+              </div>
+              <h1>{business.nombre}</h1>
+              {business.descripcion && <p>{business.descripcion}</p>}
+            </div>
           </div>
-          <div className="business-public-actions"><Link className="business-public-videos" to={`/videos?negocio=${business.id}`}><BusinessIcon name="play" />Ver videos del negocio</Link><ReportLink tipo="negocio" id={business.id} /></div>
+          <div className="business-public-actions">
+            <Link className="business-public-videos" to={`/videos?negocio=${business.id}`}><BusinessIcon name="play" />Ver videos del negocio</Link>
+            <ReportLink tipo="negocio" id={business.id} showIcon />
+          </div>
         </div>
         {business.estado !== 'activo' && <p className="business-public-private-notice" role="status">Este negocio está {business.estado}. Esta vista es privada para su propietario.</p>}
-        <div className="business-public-contact">
+        {(info.length > 0 || hasMap || business.enlace_mapa) && <div className="business-public-contact">
           {info.map(([icon, label, text, href]) => <div className={`business-contact-item contact-${icon}`} key={label}><BusinessIcon name={icon} /><div><strong>{label}</strong>{href ? <a href={href}>{text}</a> : <span>{text}</span>}</div></div>)}
           {hasMap ? <a className="business-map-link" href="#mapa-negocio"><BusinessIcon name="pin" />Ver en el mapa</a> : business.enlace_mapa ? <a className="business-map-link" href={business.enlace_mapa} target="_blank" rel="noreferrer"><BusinessIcon name="pin" />Cómo llegar ↗</a> : null}
-        </div>
+        </div>}
       </section>
 
       <section className="detalle-productos" aria-labelledby="business-products-title">
-        <div className="business-products-heading"><div className="business-products-title"><span><BusinessIcon name="box" /></span><div><h2 id="business-products-title">Productos disponibles</h2><p>Conoce nuestros productos y elige tu favorito.</p></div></div><span className="business-products-count">{catalog.length} productos · {promotions} en promoción</span></div>
-        {catalog.length > 0 && <div className="business-products-controls"><div className="business-product-tabs" aria-label="Filtrar productos"><button type="button" aria-pressed={!onlyPromos} className={!onlyPromos ? 'active' : ''} onClick={() => setOnlyPromos(false)}>Todos</button><button type="button" aria-pressed={onlyPromos} className={onlyPromos ? 'active' : ''} onClick={() => setOnlyPromos(true)}>En promoción ({promotions})</button></div><input type="search" aria-label="Buscar productos de este negocio" placeholder="Busca un producto…" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
-        {visible.length ? <div className="detalle-lista-productos">{visible.map((p) => <CardProducto key={p.id} {...p} hideBusinessLink />)}</div> : <div className="business-products-empty"><BusinessIcon name="box" /><p>{catalog.length ? 'No hay productos que coincidan con tu búsqueda.' : 'Este negocio todavía no tiene productos registrados.'}</p>{catalog.length > 0 && <button onClick={() => { setSearch(''); setOnlyPromos(false); }}>Ver todos los productos</button>}</div>}
+        <div className="business-products-heading">
+          <div className="business-products-title"><span><BusinessIcon name="box" /></span><div><h2 id="business-products-title">Productos disponibles</h2><p>Descubre lo que este negocio tiene para ti.</p></div></div>
+          <span className="business-products-count">{catalog.length} {catalog.length === 1 ? 'producto' : 'productos'}{promotions > 0 && ` · ${promotions} en promoción`}</span>
+        </div>
+        {catalog.length > 0 && <div className="business-products-controls">
+          <div className="business-product-tabs" role="group" aria-label="Filtrar productos">
+            <button type="button" aria-pressed={!onlyPromos} className={!onlyPromos ? 'active' : ''} onClick={() => setOnlyPromos(false)}><BusinessIcon name="box" />Todos</button>
+            {promotions > 0 && <button type="button" aria-pressed={onlyPromos} className={onlyPromos ? 'active' : ''} onClick={() => setOnlyPromos(true)}><BusinessIcon name="tag" />En promoción ({promotions})</button>}
+          </div>
+          <label className="business-products-search"><BusinessIcon name="search" /><input type="search" aria-label="Buscar productos de este negocio" placeholder="Busca un producto…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
+        </div>}
+        {catalog.length > 0 && <p className="business-products-results" role="status">{visible.length} {visible.length === 1 ? 'producto disponible' : 'productos disponibles'}{onlyPromos ? ' en promoción' : ''}{search.trim() ? ` para “${search.trim()}”` : ''}</p>}
+        {visible.length ? <div className="detalle-lista-productos">{visible.map((p) => <CardProducto key={p.id} {...p} variant="business" hideBusinessLink />)}</div> : <div className="business-products-empty"><BusinessIcon name="box" /><h3>{catalog.length ? 'No encontramos productos' : 'Pronto encontrarás novedades aquí'}</h3><p>{catalog.length ? 'Prueba con otra búsqueda o consulta todos los productos.' : 'Este negocio todavía no tiene productos registrados.'}</p>{catalog.length > 0 && <button onClick={() => { setSearch(''); setOnlyPromos(false); }}>Ver todos los productos</button>}</div>}
       </section>
 
-      {(hasMap || business.enlace_mapa) && <section className="business-public-location" id="mapa-negocio" aria-label="Ubicación del negocio"><div className="business-products-heading"><div className="business-products-title"><span><BusinessIcon name="pin" /></span><div><h2>Encuéntranos</h2><p>{business.direccion}</p></div></div>{business.enlace_mapa && <a href={business.enlace_mapa} target="_blank" rel="noreferrer">Cómo llegar ↗</a>}</div><LocationMap latitud={business.latitud} longitud={business.longitud} mapaEmbed={business.mapa_embed} /></section>}
+      {(hasMap || business.enlace_mapa) && <section className="business-public-location" id="mapa-negocio" aria-label="Ubicación del negocio"><div className="business-products-heading"><div className="business-products-title"><span><BusinessIcon name="pin" /></span><div><h2>Encuéntranos</h2>{business.direccion && <p>{business.direccion}</p>}</div></div>{business.enlace_mapa && <a className="business-map-link" href={business.enlace_mapa} target="_blank" rel="noreferrer"><BusinessIcon name="pin" />Cómo llegar ↗</a>}</div><LocationMap latitud={business.latitud} longitud={business.longitud} mapaEmbed={business.mapa_embed} /></section>}
     </main>
   );
+}
+
+export default function DetalleNegocio() {
+  const { id } = useParams();
+  return <BusinessDetail key={id} id={id} />;
 }
