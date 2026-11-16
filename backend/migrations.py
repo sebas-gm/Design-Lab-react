@@ -5,6 +5,7 @@ BUSINESS_COLUMNS = {
     'telefono': 'VARCHAR(30)',
     'correo_contacto': 'VARCHAR(254)',
     'enlace_mapa': 'VARCHAR(2048)',
+    'mapa_embed': 'VARCHAR(4096)',
     'hora_apertura': 'VARCHAR(5)',
     'hora_cierre': 'VARCHAR(5)',
     'dias_atencion': 'VARCHAR(60)',

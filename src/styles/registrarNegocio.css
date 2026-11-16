@@ -166,3 +166,5 @@
 .business-time-controls > span { padding-bottom: 12px; color: #8d749e; }
 .business-time-controls .business-time-clear { padding: 12px 9px; font-size: 11px; background: #f4edfc; color: #7840ab; border-color: #e6d6f4; }
 .business-time-picker > small { display: block; color: #947da5; font-size: 11px; margin-top: 8px; }
+.business-map-preview { border: 1px solid #e6daf2; border-radius: 12px; overflow: hidden; }
+.business-map-preview iframe { display: block; width: 100%; height: 240px; border: 0; }

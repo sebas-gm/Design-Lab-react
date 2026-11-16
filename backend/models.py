@@ -38,6 +38,7 @@ class Business(Base):
     telefono = Column(String(30), nullable=False, default='', server_default='')
     correo_contacto = Column(String(254), nullable=False, default='', server_default='')
     enlace_mapa = Column(String(2048), nullable=False, default='', server_default='')
+    mapa_embed = Column(String(4096), nullable=False, default='', server_default='')
     hora_apertura = Column(String(5), nullable=False, default='', server_default='')
     hora_cierre = Column(String(5), nullable=False, default='', server_default='')
     dias_atencion = Column(String(60), nullable=False, default='', server_default='')

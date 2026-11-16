@@ -6,6 +6,7 @@ import BusinessImagePicker from "./BusinessImagePicker";
 import BusinessTimePicker from "./BusinessTimePicker";
 import { useConfirm } from "../confirmation";
 import { businessDays } from "../businessDays";
+import { googleMapsEmbed } from "../googleMapsEmbed";
 import "../styles/registrarNegocio.css";
 
 async function upload(file) {
@@ -33,6 +34,7 @@ export default function EntityForm({
     : negocios.filter((n) => n.owner_id === user.id);
   const [error, setError] = useState("");
   const [description, setDescription] = useState(initial?.descripcion || "");
+  const [mapEmbed, setMapEmbed] = useState(initial?.mapa_embed || '');
   const [days, setDays] = useState((initial?.dias_atencion || "").split(",").filter(Boolean));
   const [busy, setBusy] = useState(false);
   const [photo, setPhoto] = useState(null);
@@ -50,6 +52,11 @@ export default function EntityForm({
       ? `¿Quieres guardar los cambios de este ${entity}?`
       : `¿Quieres registrar este ${entity}?${business && !adminMode ? " Se activará tu cuenta de negocios y se enviará a revisión antes de publicarlo." : ""}`;
     const values = Object.fromEntries(new FormData(event.currentTarget));
+    if (business) {
+      const normalizedEmbed = googleMapsEmbed(mapEmbed);
+      if (normalizedEmbed === null) { setError('Pega el código de Compartir → Insertar un mapa de Google Maps, o deja el campo vacío.'); return; }
+      values.mapa_embed = normalizedEmbed;
+    }
     if (adminMode && business) values.owner_id = Number(values.owner_id);
     if (!(await confirm(question, "save"))) return;
     setError("");
@@ -218,7 +225,15 @@ export default function EntityForm({
                 placeholder="https://maps.app.goo.gl/…"
                 defaultValue={initial?.enlace_mapa}
               />
+              <small>Este enlace se usa en el botón «Cómo llegar». También admite enlaces cortos.</small>
             </label>
+            <label>
+              Mapa integrado de Google Maps (opcional)
+              <textarea name="mapa_embed" value={mapEmbed} rows={3} maxLength={12000} placeholder="Pega aquí el código de Insertar un mapa o el enlace https://www.google.com/maps/embed?pb=…"
+                onChange={(event) => { setMapEmbed(event.target.value); event.currentTarget.setCustomValidity(googleMapsEmbed(event.target.value) === null ? 'Usa Compartir → Insertar un mapa → Copiar HTML, no un enlace corto.' : ''); }} />
+              <small>En Google Maps desde tu PC: Compartir → Insertar un mapa → Copiar HTML. No necesitas clave API. Guardamos únicamente el enlace del mapa.</small>
+            </label>
+            {googleMapsEmbed(mapEmbed) && <div className="business-map-preview"><iframe title="Vista previa de Google Maps" src={googleMapsEmbed(mapEmbed)} loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /></div>}
           </>
         ) : (
           <label>
@@ -252,8 +267,8 @@ export default function EntityForm({
           <details className="location-details">
             <summary>Ubicación en el mapa (opcional)</summary>
             <p>
-              Indica ambas coordenadas para mostrar el mapa dentro de Design
-              Lab.
+              Como alternativa al mapa de Google, indica ambas coordenadas
+              para mostrar la ubicación en OpenStreetMap.
             </p>
             <div className="form-two-columns">
               <label>

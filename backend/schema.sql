@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS businesses (
 	telefono VARCHAR(30) NOT NULL DEFAULT '',
 	correo_contacto VARCHAR(254) NOT NULL DEFAULT '',
 	enlace_mapa VARCHAR(2048) NOT NULL DEFAULT '',
+	mapa_embed VARCHAR(4096) NOT NULL DEFAULT '',
 	hora_apertura VARCHAR(5) NOT NULL DEFAULT '',
 	hora_cierre VARCHAR(5) NOT NULL DEFAULT '',
 	dias_atencion VARCHAR(60) NOT NULL DEFAULT '',

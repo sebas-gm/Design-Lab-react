@@ -944,6 +944,41 @@ def test_rejected_sensitive_changes_do_not_hide_or_change_approved_business(clie
     assert owner.post(f'/api/negocios/{bid}/solicitar-publicacion').status_code == 200
 
 
+def test_google_embed_extracts_only_safe_url_and_persists_for_admin(clients):
+    from backend.maps import google_embed
+    owner, admin = clients
+    uid = signup(owner, 'map-embed@example.com').json()['id']
+    make_admin(admin)
+    source = 'https://www.google.com/maps/embed?pb=!1m2!2m1!1sCochabamba'
+    html = f'<iframe src="{source}" width="600" onload="alert(1)"></iframe><script>alert(2)</script>'
+    response = admin.post('/api/admin/negocios', json={**BUSINESS, 'owner_id': uid, 'mapa_embed': html})
+    assert response.status_code == 201, response.text
+    saved = response.json()['mapa_embed']
+    assert saved == google_embed(source)
+    assert '<' not in saved and 'script' not in saved and 'onload' not in saved
+    bid = response.json()['id']
+    assert owner.get('/api/negocios').json()[0]['mapa_embed'] == saved
+    changed = owner.put(f'/api/negocios/{bid}', json={**BUSINESS, 'mapa_embed': source + 'Nuevo'})
+    assert changed.status_code == 200
+    assert admin.get('/api/negocios').json()[0]['mapa_embed'] == saved
+    assert owner.get('/api/mi-publicacion').json()['propuesta']['mapa_embed'] != saved
+
+
+@pytest.mark.parametrize('value', [
+    'https://maps.app.goo.gl/example', 'http://www.google.com/maps/embed?pb=x',
+    'https://www.google.com.evil.example/maps/embed?pb=x', 'https://evil.example/maps/embed?pb=x',
+    'javascript:alert(1)', 'https://user:pass@www.google.com/maps/embed?pb=x',
+    'https://www.google.com/maps/embed/v1/place?key=secret&q=x',
+    '<iframe src="https://evil.example/"></iframe>',
+    '<iframe src="https://www.google.com/maps/embed?pb=x"></iframe><iframe src="https://www.google.com/maps/embed?pb=y"></iframe>',
+    'https://www.google.com/maps/embed?pb=x&pb=y',
+])
+def test_rejects_unsafe_or_non_embed_maps(clients, value):
+    owner, _ = clients
+    signup(owner, 'invalid-map@example.com')
+    assert owner.post('/api/negocios', json={**BUSINESS, 'mapa_embed': value}).status_code == 422
+
+
 def test_registration_wait_expires_at_exact_deadline():
     from datetime import datetime, timedelta
     from types import SimpleNamespace

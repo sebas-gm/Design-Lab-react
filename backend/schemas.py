@@ -57,6 +57,13 @@ class BusinessIn(Input):
     telefono: str = Field(default='', max_length=30, pattern=r'^[+\d\s().-]*$')
     correo_contacto: EmailStr | Literal[''] = ''
     enlace_mapa: str = Field(default='', max_length=2048)
+    mapa_embed: str = Field(default='', max_length=4096)
+
+    @field_validator('mapa_embed', mode='before')
+    @classmethod
+    def embedded_map(cls, value):
+        from backend.maps import google_embed
+        return google_embed(value)
     hora_apertura: str = Field(default='', pattern=r'^(?:[01]\d|2[0-3]):[0-5]\d$|^$')
     hora_cierre: str = Field(default='', pattern=r'^(?:[01]\d|2[0-3]):[0-5]\d$|^$')
     dias_atencion: str = Field(default='', max_length=60)

@@ -13,7 +13,7 @@ from backend.admin import admin_user, audit, finish, get_item
 from backend.moderation import notify, record_decision
 
 router = APIRouter(prefix='/api', tags=['Publicación de negocios'])
-SENSITIVE = ('nombre', 'direccion', 'imagen')
+SENSITIVE = ('nombre', 'direccion', 'imagen', 'enlace_mapa', 'mapa_embed', 'latitud', 'longitud')
 UNPUBLISHED = ('pendiente', 'correcciones', 'rechazado')
 
 
@@ -64,7 +64,12 @@ def queue(db, business, data, resubmit=False):
 
 def owner_update(db, business, data):
     item = db.scalar(select(BusinessApplication).where(BusinessApplication.negocio_id == business.id).with_for_update())
-    if business.estado == 'activo' and (any(getattr(business, key) != getattr(data, key) for key in SENSITIVE) or (item and item.estado in ('pendiente', 'correcciones', 'rechazado'))):
+    def changed(key):
+        previous, proposed = getattr(business, key), getattr(data, key)
+        if key in ('latitud', 'longitud') and previous is not None and proposed is not None:
+            return round(float(previous), 7) != round(float(proposed), 7)
+        return previous != proposed
+    if business.estado == 'activo' and (any(changed(key) for key in SENSITIVE) or (item and item.estado in ('pendiente', 'correcciones', 'rechazado'))):
         complete(data)
         if item and item.estado in ('correcciones', 'rechazado'):
             item.propuesta = json.dumps(data.model_dump(), ensure_ascii=False, default=str)

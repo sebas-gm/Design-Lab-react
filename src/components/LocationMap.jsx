@@ -1,5 +1,9 @@
-export default function LocationMap({ latitud, longitud }) {
-  if (latitud == null || longitud == null) return <p>Ubicación del mapa pendiente de registrar.</p>;
+import { googleMapsEmbed } from '../googleMapsEmbed';
+
+export default function LocationMap({ latitud, longitud, mapaEmbed }) {
+  const embed = googleMapsEmbed(mapaEmbed || '');
+  if (embed) return <section className="location-map"><h2>Ubicación</h2><iframe title="Ubicación del negocio en Google Maps" loading="lazy" src={embed} allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /></section>;
+  if (latitud == null || longitud == null) return null;
   const lat = Number(latitud), lon = Number(longitud);
   const bbox = [lon - .005, lat - .005, lon + .005, lat + .005].join(',');
   return <section className="location-map"><h2>Ubicación</h2>
