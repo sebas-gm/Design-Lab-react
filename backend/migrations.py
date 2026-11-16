@@ -23,6 +23,17 @@ def migrate_business_details(engine):
                 connection.execute(text(f"ALTER TABLE businesses ADD COLUMN {name} {sql_type} NOT NULL DEFAULT ''"))
 
 
+def migrate_business_deletion(engine):
+    existing = {column['name'] for column in inspect(engine).get_columns('businesses')}
+    with engine.begin() as connection:
+        for name, sql_type in [('eliminacion_solicitada', 'DATETIME'), ('eliminacion_programada', 'DATETIME'), ('estado_antes_eliminacion', 'VARCHAR(16)')]:
+            if name not in existing:
+                connection.execute(text(f'ALTER TABLE businesses ADD COLUMN {name} {sql_type} NULL'))
+        indexes = inspect(connection).get_indexes('businesses')
+        if not any(i['column_names'] == ['eliminacion_programada'] for i in indexes):
+            connection.execute(text('CREATE INDEX ix_business_deletion_due ON businesses (eliminacion_programada)'))
+
+
 def migrate_account_types(engine):
     existing = {column['name'] for column in inspect(engine).get_columns('users')}
     with engine.begin() as connection:

@@ -11,6 +11,7 @@ import AdminPublications from "../components/AdminPublications";
 import FormModal from "../components/FormModal";
 import { registrationWaiting } from "../registration";
 import "../styles/admin.css";
+import { deletionDate } from '../businessDeletion';
 
 function VideoEditor({ initial, businesses, onSaved, onCancel }) {
   const confirm = useConfirm();
@@ -42,7 +43,7 @@ function VideoEditor({ initial, businesses, onSaved, onCancel }) {
     }
   }
   return (
-    <form className="entity-form" onSubmit={save}>
+    <form autoComplete="off" className="entity-form" onSubmit={save}>
       <label>
         Negocio
         <select
@@ -158,6 +159,16 @@ export default function AdminPanel() {
   }
   async function changeStatus(item, estado) {
     setDecision({ type: "status", item, estado });
+  }
+  async function cancelDeletion(item) {
+    if (!(await confirm(`Se cancelará la eliminación de “${item.nombre}”. Sus datos se conservarán y volverá al estado ${item.estado_antes_eliminacion || 'pendiente'}.`, 'save'))) return;
+    setBusy(true); setError('');
+    try {
+      await api(`/admin/negocios/${item.id}/cancelar-eliminacion`, { method: 'POST' });
+      await load();
+      window.dispatchEvent(new Event('navishop:moderation-changed'));
+      setNotice('Eliminación pendiente cancelada. Se conservó el estado administrativo del negocio.');
+    } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   async function remove(kind, item) {
     if (kind === "negocios") {
@@ -301,6 +312,7 @@ export default function AdminPanel() {
             <label className="admin-search">
               Buscar
               <input
+                autoComplete="off"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Nombre, título o correo…"
@@ -390,15 +402,17 @@ export default function AdminPanel() {
                   <div className="admin-business-identity">
                     <div className="admin-business-details">
                     <span className={`admin-status status-${b.estado}`}>
-                      {b.estado}
+                      {b.estado === 'eliminacion' ? 'Eliminación pendiente' : b.estado}
                     </span>
                     <h2>{b.nombre}</h2>
                     <p>{b.direccion}</p>
                     <small>Propietario: {ownerName(b.owner_id)}</small>
+                    {b.eliminacion_programada && <p>Eliminación definitiva: {deletionDate(b.eliminacion_programada)} (Bolivia). Al restaurar: {b.estado_antes_eliminacion}.</p>}
                     </div>
                   </div>
                   <div className="admin-actions">
-                    <button disabled={busy} onClick={() => edit("negocios", b)}>
+                    {b.eliminacion_programada && <button disabled={busy} onClick={() => cancelDeletion(b)}>Cancelar eliminación pendiente</button>}
+                    <button disabled={busy || Boolean(b.eliminacion_programada)} onClick={() => edit("negocios", b)}>
                       Editar / asignar propietario
                     </button>
                     {['suspendido', 'archivado'].includes(b.estado) && (
@@ -409,7 +423,7 @@ export default function AdminPanel() {
                         {b.publicacion_aprobada ? 'Restaurar' : 'Reabrir revisión'}
                       </button>
                     )}
-                    {b.estado === "activo" && (
+                    {(b.estado === "activo" || b.eliminacion_programada) && (
                       <button
                         disabled={busy}
                         onClick={() => changeStatus(b, "suspendido")}

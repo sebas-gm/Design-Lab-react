@@ -1,0 +1,10 @@
+.pending-business-deletion { max-width: 800px; padding: clamp(22px, 4vw, 38px); margin: 20px auto; border: 1px solid #e4cff4; border-radius: 22px; background: linear-gradient(125deg, #fff, #f5eaff); box-shadow: 0 6px 20px #5f2d8310; }
+.pending-deletion-badge { display: inline-block; color: #8c5a15; background: #fff0cf; border-radius: 16px; padding: 7px 12px; font-size: 12px; margin-bottom: 18px; }
+.pending-business-deletion h2 { color: #2c1845; font-size: clamp(24px, 3vw, 30px); margin: 0 0 10px; }
+.pending-business-deletion h3 { color: #8540bd; font-size: 19px; margin: 0 0 18px; overflow-wrap: anywhere; }
+.pending-business-deletion p { color: #7a608e; font-size: 14px; line-height: 1.7; margin-bottom: 18px; }
+.pending-deletion-date { display: grid; gap: 7px; padding: 18px; border: 1px solid #e4d4f3; border-radius: 14px; background: white; margin-bottom: 18px; }
+.pending-deletion-date strong { color: #3b2354; font-size: 13px; }
+.pending-deletion-date time { color: #8740b5; font-size: 15px; line-height: 1.5; }
+.pending-deletion-restriction { padding: 14px; border-radius: 12px; background: #fff4dd; }
+.pending-business-deletion button { font-size: 14px; margin-top: 4px; }

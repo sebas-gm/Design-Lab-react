@@ -75,7 +75,7 @@ export default function AdminDecision({ decision, onSaved, onCancel }) {
       <h2>{title}</h2>
       <p>{item.nombre || item.nombre_negocio || item.correo}</p>
       {type === "wait" && <p>Se eliminará la espera temporal. Si la cuenta requiere autorización administrativa, tendrás que concederla por separado.</p>}
-      <form className="entity-form" onSubmit={save}>
+      <form autoComplete="off" className="entity-form" onSubmit={save}>
         {type === "review" ? (
           <>
             <p>

@@ -154,7 +154,7 @@ Sustituye `CORREO_DE_LA_CUENTA` por el correo real. No se crean contraseñas ni 
 
 **Negocios:** crear y editar negocios asignando una cuenta propietaria registrada. Cada propietario sigue limitado a un negocio, incluso si la creación la realiza un administrador. La asignación activa el tipo de cuenta de negocios del propietario, no el del administrador. Se puede transferir la propiedad a otra cuenta sin negocio. El propietario anterior conserva su cuenta, pero pierde los permisos sobre ese negocio.
 
-**Estados:** `activo`, `suspendido`, `archivado`. Suspender o archivar oculta el negocio y sus productos/promociones/videos del catálogo para otros usuarios. Su propietario puede corregir la información si está suspendido; si está archivado, conserva acceso de solo lectura. Ve el estado y motivo en su panel. No puede reactivarlo ni eliminarlo para eludir la suspensión. Las URLs de imágenes ya publicadas siguen disponibles; cambiar el estado no elimina archivos.
+**Estados administrativos:** `activo`, `suspendido`, `archivado`. Suspender o archivar oculta el negocio y sus productos/promociones/videos del catálogo para otros usuarios. Su propietario puede corregir la información si está suspendido; si está archivado, conserva acceso de solo lectura. La eliminación voluntaria recuperable es independiente: al restaurarla se conserva la restricción administrativa anterior. Las URLs de imágenes ya publicadas siguen disponibles; cambiar el estado no elimina archivos.
 
 **Borrado definitivo:** solo desde administración, después de archivar el negocio y retirar sus productos y enlaces de video. No hay borrado en cascada ni eliminación de imágenes. Archivar permite conservar todo y restaurarlo después.
 
@@ -206,7 +206,19 @@ Se integran los reproductores oficiales de YouTube (incluye Shorts y directos) y
 
 Para TikTok usa `https://www.tiktok.com/@usuario/video/ID`; abre primero los enlaces cortos `vm.tiktok.com`/`vt.tiktok.com` en la plataforma y copia la dirección completa. En YouTube se admiten `watch?v=ID`, `youtu.be/ID`, `/shorts/ID`, `/live/ID` y `/embed/ID`. Otras plataformas todavía no están integradas. Los videos privados, eliminados o con inserción restringida pueden no reproducirse; siempre se ofrece un enlace a la plataforma original. La disponibilidad final depende del proveedor y de la conexión a Internet.
 
-El arranque del backend o `python -m backend.init_db` crea la tabla `videos` sin borrar registros existentes. No se permite eliminar un negocio que aún tenga productos o enlaces de video. Respaldo previo: `76b1aed`, etiqueta `respaldo-antes-sidebar-videos`.
+El arranque del backend o `python -m backend.init_db` crea la tabla `videos` sin borrar registros existentes. La solicitud de eliminación voluntaria permite conservar productos y videos durante el plazo de recuperación descrito abajo. El borrado administrativo inmediato mantiene sus controles propios.
+
+## Eliminación recuperable de negocios
+
+Desde **Mi negocio → Eliminar mi negocio**, el propietario solicita la eliminación con confirmación. Durante 15 días exactos el negocio permanece oculto (`estado = eliminacion`), conserva ficha, productos/promociones y videos, y no admite cambios ni un segundo negocio. La cuenta sigue siendo de negocios, con un menú reducido a Mi cuenta y Estado y solicitudes. Esa pantalla muestra la fecha límite en hora de Bolivia y **Restaurar negocio**. Repetir la solicitud no amplía el plazo.
+
+Restaurar recupera el estado previo, incluidas suspensiones, archivos y aprobaciones pendientes. No cambia `puede_registrar`. El superadmin dispone de **Cancelar eliminación pendiente** en Negocios y puede aplicar nuevas restricciones durante el plazo; estas también se conservan al restaurar. No se puede reasignar ni editar la ficha mientras la eliminación esté pendiente. No se permite el borrado administrativo inmediato de una eliminación pendiente.
+
+Al vencer el plazo se eliminan la ficha, productos/promociones, enlaces de video y propuesta de publicación, y la cuenta vuelve a personal sin otra espera de 15 días. La autorización administrativa para registrar negocios sigue siendo independiente. Se conservan los historiales, reportes y notificaciones para trazabilidad; los archivos físicos de imágenes no se borran, evitando afectar referencias compartidas.
+
+FastAPI revisa vencimientos cada 60 segundos y antes de atender solicitudes autenticadas. Si está detenido, el borrado se completa cuando vuelva a ejecutarse; desde la fecha límite ya no se permite restaurar. Mantén el backend funcionando para procesar solicitudes incluso si el propietario no vuelve a entrar. La migración `migrate_business_deletion`, aplicada al iniciar FastAPI o mediante `python -m backend.init_db`, añade únicamente tres columnas opcionales y un índice. No marca ni borra negocios existentes.
+
+API: DELETE `/api/negocios/{id}` solicita la eliminación; POST `/api/negocios/{id}/restaurar` la cancela para su propietario; POST `/api/admin/negocios/{id}/cancelar-eliminacion` la cancela como administrador. Las esperas antiguas ya existentes en `users.registro_disponible_desde` se conservan por compatibilidad y el superadmin puede seguir levantándolas. Las nuevas solicitudes usan el plazo de recuperación en lugar de esa espera posterior. Respaldo previo: `33c5ad3`.
 
 Verificación de esta etapa: once pruebas de API aprobadas, ESLint y compilación aprobados; tabla y endpoint `/api/videos` comprobados con MySQL real. La suite prueba enlaces, permisos, edición, eliminación, filtros y paginación. La reproducción real en cada plataforma y la revisión visual quedan pendientes en un navegador conectado.
 

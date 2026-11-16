@@ -118,6 +118,8 @@ def create_business(data: AdminBusinessIn, user=Depends(admin_user), db=Depends(
 @router.put('/negocios/{item_id}')
 def edit_business(item_id: int, data: AdminBusinessIn, user=Depends(admin_user), db=Depends(get_db)):
     item = get_item(db, Business, item_id)
+    if item.eliminacion_programada:
+        raise HTTPException(409, 'Cancela primero la eliminación pendiente antes de editar o reasignar el negocio')
     old_owner = item.owner_id
     assign_owner(db, data.owner_id, item_id)
     for key, value in data.model_dump().items():
@@ -136,6 +138,16 @@ def edit_business(item_id: int, data: AdminBusinessIn, user=Depends(admin_user),
 @router.patch('/negocios/{item_id}/estado')
 def status(item_id: int, data: BusinessStatus, user=Depends(admin_user), db=Depends(get_db)):
     item = get_item(db, Business, item_id)
+    if item.eliminacion_programada:
+        if data.estado not in ('suspendido', 'archivado'):
+            raise HTTPException(409, 'Cancela primero la eliminación pendiente para restaurar o revisar el negocio')
+        item.estado_antes_eliminacion = data.estado
+        from backend.publication import close_application
+        close_application(db, item, 'La administración aplicó una restricción durante la eliminación pendiente.')
+        record_decision(db, item, data.estado, data.motivo, data.nota_interna)
+        audit(db, user, 'restringir_eliminacion', 'negocio', item.id, {'estado_al_restaurar': data.estado, 'motivo': data.motivo})
+        finish(db)
+        return serialize(item)
     if not item.publicacion_aprobada and data.estado == 'activo':
         raise HTTPException(409, 'Aprueba primero la solicitud desde Publicaciones')
     if data.estado == 'pendiente' and item.publicacion_aprobada:

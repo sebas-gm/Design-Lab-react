@@ -107,7 +107,7 @@ export default function EntityForm({
   }
 
   return (
-    <form className="entity-form" onSubmit={submit}>
+    <form autoComplete="off" className="entity-form" onSubmit={submit}>
       <fieldset disabled={busy} className="form-section">
         <legend>
           {business ? "1. Datos principales" : "Datos del producto"}

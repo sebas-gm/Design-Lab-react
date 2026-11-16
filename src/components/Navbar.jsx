@@ -62,7 +62,8 @@ function Icon({ name }) {
 
 export default function Navbar() {
   const confirm = useConfirm();
-  const { user, setUser, notificationCount = 0 } = useLab();
+  const { user, setUser, notificationCount = 0, negocios, moderation } = useLab();
+  const pendingDeletion = (negocios.find(n => n.owner_id === user?.id) || moderation?.negocio)?.eliminacion_programada;
   const business = user?.is_admin || user?.tipo_cuenta === "negocios";
   const { pathname } = useLocation();
   const clientView = isClientView(user, pathname);
@@ -145,7 +146,7 @@ export default function Navbar() {
           </nav>
         )}
         {(clientView || (workspace && user?.is_admin)) && (
-          <form className="topbar-search" role="search" onSubmit={search}>
+          <form autoComplete="off" className="topbar-search" role="search" onSubmit={search}>
             <input
               name="q"
               aria-label="Buscar negocios y productos"
@@ -243,7 +244,7 @@ export default function Navbar() {
                 ? "SUPERADMIN Bv"
                 : "Mi espacio de negocios"}
             </p>
-            {links(user?.is_admin ? adminLinks : ownerLinks)}
+            {links(user?.is_admin ? adminLinks : pendingDeletion ? ownerLinks.filter(([path]) => ['/mi-cuenta', '/estado-negocio'].includes(path)) : ownerLinks)}
           </nav>
           <div className="sidebar-profile">
             <span className="profile-avatar">

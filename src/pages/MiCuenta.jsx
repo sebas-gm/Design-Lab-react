@@ -216,7 +216,7 @@ export default function MiCuenta() {
         {(close) => (
         <section id="profile-editor" className="profile-editor">
           <h2>Editar perfil</h2>
-          <form className="entity-form" onSubmit={saveProfile}>
+          <form autoComplete="off" className="entity-form" onSubmit={saveProfile}>
             <label>
               Nombre
               <input
@@ -224,7 +224,7 @@ export default function MiCuenta() {
                 defaultValue={user.nombre}
                 minLength="2"
                 maxLength="120"
-                autoComplete="name"
+                autoComplete="off"
                 disabled={busy}
                 required
               />

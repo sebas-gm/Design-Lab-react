@@ -11,7 +11,7 @@ export default function PublicationNotice() {
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   if (user?.is_admin || !publication || publication.estado === 'aprobado') return null;
   const business = negocios.find((b) => b.id === publication.negocio_id);
-  if (!business) return null;
+  if (!business || business.eliminacion_programada) return null;
   const labels = { pendiente: 'Publicación pendiente de revisión', correcciones: 'La administración solicita correcciones', rechazado: 'Solicitud de publicación rechazada', cerrada: 'Solicitud cerrada por cambios administrativos' };
   async function resend() {
     if (!(await confirm('Se enviará nuevamente tu propuesta para revisión. Puedes enviar hasta 3 solicitudes en 24 horas.', 'save'))) return;

@@ -1,5 +1,8 @@
 import os
 import secrets
+import asyncio
+import logging
+from contextlib import suppress
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
@@ -15,7 +18,7 @@ from backend.schemas import BusinessIn, ImportData, Login, ProductIn, Promotion,
 from backend.videos import video_source
 from backend.security import hash_password, token_hash, verify_password
 from backend.registration import check_registration_wait
-from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin, migrate_moderation
+from backend.migrations import migrate_business_details, migrate_account_types, migrate_single_business, migrate_profile, migrate_admin, migrate_moderation, migrate_business_deletion
 from backend.uploads import UPLOAD_DIR, save_image
 
 engine = make_engine()
@@ -28,13 +31,35 @@ async def lifespan(app):
     # Only creates missing tables. Never drops or replaces existing data.
     Base.metadata.create_all(engine)
     migrate_business_details(engine)
+    migrate_business_deletion(engine)
     migrate_account_types(engine)
     migrate_single_business(engine)
     migrate_profile(engine)
     migrate_admin(engine)
     migrate_moderation(engine)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    yield
+    task = asyncio.create_task(deletion_worker())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+async def deletion_worker():
+    # Expire requests even when the owner never logs in again.
+    from sqlalchemy.orm import Session as DatabaseSession
+    from backend.business_deletion import purge_due
+    def sweep():
+        with DatabaseSession(engine) as db:
+            purge_due(db, now())
+    while True:
+        await asyncio.sleep(60)
+        try:
+            await asyncio.to_thread(sweep)
+        except Exception:
+            logging.getLogger(__name__).exception('No se pudo completar la limpieza de eliminaciones pendientes; se reintentará.')
 
 
 app = FastAPI(title='Navishop API', lifespan=lifespan)
@@ -67,6 +92,8 @@ def current_user(request: Request, db=Depends(get_db)):
     session = db.get(Session, token_hash(token))
     if not session or session.expires_at <= now():
         raise HTTPException(401, 'Inicia sesión para continuar')
+    from backend.business_deletion import purge_due
+    purge_due(db, now())
     return db.get(User, session.user_id)
 
 
@@ -86,11 +113,14 @@ def serialize(record):
 
 def owned(db, business_id, user):
     business_user(user)
-    business = db.get(Business, business_id)
+    db.scalar(select(User).where(User.id == user.id).with_for_update())
+    business = db.scalar(select(Business).where(Business.id == business_id).with_for_update().execution_options(populate_existing=True))
     if not business:
         raise HTTPException(404, 'Negocio no encontrado')
     if business.owner_id != user.id:
         raise HTTPException(403, 'No tienes permiso sobre este negocio')
+    if business.eliminacion_programada:
+        raise HTTPException(409, 'Tu negocio tiene una eliminación pendiente. Restáuralo desde Estado y solicitudes antes de modificarlo.')
     if business.estado == 'archivado':
         raise HTTPException(403, 'Tu negocio está archivado y es de solo lectura. Solicita restauración desde Estado y solicitudes.')
     return business
@@ -209,7 +239,6 @@ def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get
 
 @app.put('/api/negocios/{item_id}')
 def update_business(item_id: int, data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
-    db.scalar(select(Business.id).where(Business.id == item_id).with_for_update())
     item = owned(db, item_id, user)
     from backend.publication import owner_update
     owner_update(db, item, data)
@@ -219,20 +248,8 @@ def update_business(item_id: int, data: BusinessIn, user=Depends(current_user), 
 
 @app.delete('/api/negocios/{item_id}', status_code=204)
 def delete_business(item_id: int, user=Depends(current_user), db=Depends(get_db)):
-    item = owned(db, item_id, user)
-    if item.estado != 'activo':
-        raise HTTPException(403, 'Un negocio suspendido o archivado solo puede eliminarlo la administración')
-    if db.scalar(select(Product.id).where(Product.negocioId == item_id).limit(1)):
-        raise HTTPException(409, 'Elimina primero sus productos; no se borrarán en cascada')
-    if db.scalar(select(Video.id).where(Video.negocioId == item_id).limit(1)):
-        raise HTTPException(409, 'Elimina primero los enlaces de video de este negocio')
-    db.scalar(select(User).where(User.id == user.id).with_for_update())
-    db.refresh(user)
-    user.tipo_cuenta = 'personal'
-    user.registro_disponible_desde = now() + timedelta(days=15)
-    from backend.moderation import record_decision
-    record_decision(db, item, 'eliminado', 'Eliminaste voluntariamente tu negocio. Podrás registrar otro después de 15 días.')
-    db.delete(item)
+    from backend.business_deletion import request_deletion
+    request_deletion(db, item_id, user, now())
     db.commit()
 
 
@@ -287,6 +304,8 @@ def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_d
     if not user.puede_registrar:
         raise HTTPException(403, 'Tu cuenta necesita autorización para registrar o importar un negocio')
     existing = db.scalar(select(Business).where(Business.owner_id == user.id).with_for_update())
+    if existing and existing.eliminacion_programada:
+        raise HTTPException(409, 'Restaura tu negocio pendiente de eliminación o espera a que finalice el plazo antes de importar otro')
     if data.negocios and existing and existing.legacy_id != str(data.negocios[0].id):
         raise HTTPException(409, 'Tu cuenta ya tiene un negocio. No se importará otro ni se reemplazará el actual.')
     mapping = {}
@@ -381,4 +400,6 @@ from backend.reports import router as reports_router
 app.include_router(reports_router)
 from backend.publication import router as publication_router
 app.include_router(publication_router)
+from backend.business_deletion import router as deletion_router
+app.include_router(deletion_router)
 app.mount('/api/uploads', StaticFiles(directory=UPLOAD_DIR, check_dir=False), name='uploads')

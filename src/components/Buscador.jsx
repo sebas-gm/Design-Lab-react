@@ -3,6 +3,7 @@ function Buscador({ busqueda, setBusqueda }) {
   return (
     <div className="buscador">
       <input
+        autoComplete="off"
         type="text"
         aria-label="Buscar negocios y productos"
         placeholder="Buscar negocios y productos..."

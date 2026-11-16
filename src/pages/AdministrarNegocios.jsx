@@ -11,6 +11,7 @@ import { formatBusinessDays } from "../businessDays";
 import RegistrationWait from "../components/RegistrationWait";
 import { registrationWaiting } from "../registration";
 import "../styles/myBusiness.css";
+import PendingBusinessDeletion from '../components/PendingBusinessDeletion';
 
 export default function AdministrarNegocios() {
   const { user, negocios, productos, loading, error: catalogError, refresh, moderation, publication } = useLab();
@@ -32,14 +33,14 @@ export default function AdministrarNegocios() {
     }
   }
   async function remove() {
-    if (business.estado !== "activo" || busy) return;
-    if (!(await confirm(`Se eliminará definitivamente “${business.nombre}”. Tu cuenta volverá a personal y deberás esperar 15 días para registrar otro negocio. Esta acción no se puede deshacer.`, "delete"))) return;
+    if (business.eliminacion_programada || busy) return;
+    if (!(await confirm(`“${business.nombre}” se ocultará junto con su contenido. Tendrás 15 días para restaurarlo; después se eliminará definitivamente. Durante ese plazo no podrás editarlo ni crear otro negocio.`, "delete"))) return;
     setBusy(true);
     setError("");
     try {
       await api(`/negocios/${business.id}`, { method: "DELETE" });
-      navigate("/inicio", { replace: true });
       await refresh();
+      navigate("/estado-negocio", { replace: true });
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   }
@@ -47,6 +48,7 @@ export default function AdministrarNegocios() {
   if (catalogError) return <main className="my-business"><p role="alert">{catalogError}</p><button onClick={refresh}>Reintentar</button></main>;
   if (!business) return <main className="my-business"><header className="my-business-heading"><h1>Mi negocio</h1><p>El espacio para administrar tu negocio en Navishop.</p></header>{registrationWaiting(user) ? <RegistrationWait account={user} /> : <section className="my-business-section"><h2>{user.puede_registrar === false ? "Registro pendiente de autorización" : "Aún no tienes un negocio"}</h2><p>{user.puede_registrar === false ? "Consulta la decisión administrativa y solicita autorización para registrar otro negocio." : "Completa los datos de tu negocio para comenzar a publicar productos, promociones y videos."}</p><Link to={user.puede_registrar === false ? "/estado-negocio" : "/registrar-negocio"}>{user.puede_registrar === false ? "Estado y solicitudes →" : "Registrar mi negocio →"}</Link></section>}</main>;
 
+  if (business.eliminacion_programada) return <main className="my-business"><PendingBusinessDeletion business={business}/></main>;
   const decision = moderation?.historial?.find((e) => e.negocio_id === business.id && e.estado === business.estado);
   const count = productos.filter((p) => p.negocioId === business.id).length;
   function editButton(field) { return <button className="my-business-edit" disabled={archived || busy} onClick={() => edit(field)}>Editar</button>; }
@@ -70,7 +72,7 @@ export default function AdministrarNegocios() {
         <section className="my-business-section"><div className="my-business-section-heading"><h2>Horario de atención</h2>{editButton("hora_apertura")}</div><p>{formatBusinessDays(business.dias_atencion)}</p><div className="my-business-hours"><div><span>Apertura</span><strong>{business.hora_apertura || "Sin registrar"}</strong></div><span aria-hidden="true">—</span><div><span>Cierre</span><strong>{business.hora_cierre || "Sin registrar"}</strong></div></div><p>Mantén el horario actualizado para que tus clientes sepan cuándo visitarte.</p></section>
       </div>
       <section className="my-business-section"><div className="my-business-section-heading"><h2>Contenido de mi negocio</h2><span>{count} productos</span></div><div className="my-business-content-links"><Link to="/administrar-productos"><strong>Mis productos</strong><span>Consulta y organiza tu catálogo →</span></Link><Link to="/administrar-promociones"><strong>Mis promociones</strong><span>Gestiona los productos destacados →</span></Link><Link to="/administrar-videos"><strong>Mis videos</strong><span>Administra tus enlaces de video →</span></Link></div></section>
-      <section className="my-business-danger"><div><h2>Eliminar mi negocio</h2><p>La eliminación es definitiva. Primero debes retirar todos los productos y videos. Tu cuenta volverá a personal y tendrás que esperar 15 días para registrar otro negocio.</p>{business.estado !== "activo" && <p>Un negocio suspendido o archivado solo puede eliminarlo la administración.</p>}</div><button disabled={busy || business.estado !== "activo"} onClick={remove}>{busy ? "Eliminando…" : "Eliminar mi negocio"}</button></section>
+      <section className="my-business-danger"><div><h2>Eliminar mi negocio</h2><p>Tu negocio y su contenido se ocultarán durante 15 días. Podrás restaurarlos desde Estado y solicitudes. Al vencer el plazo se eliminarán definitivamente y tu cuenta volverá a personal, sin un segundo periodo de espera.</p></div><button disabled={busy} onClick={remove}>{busy ? "Solicitando…" : "Eliminar mi negocio"}</button></section>
     </main>
   );
 }

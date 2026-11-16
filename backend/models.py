@@ -45,6 +45,9 @@ class Business(Base):
     logo = Column(String(2048), nullable=False, default='', server_default='')
     estado = Column(String(16), nullable=False, default='activo', server_default='activo')
     publicacion_aprobada = Column(Boolean, nullable=False, default=False, server_default='0')
+    eliminacion_solicitada = Column(DateTime, nullable=True)
+    eliminacion_programada = Column(DateTime, nullable=True, index=True)
+    estado_antes_eliminacion = Column(String(16), nullable=True)
     __table_args__ = (UniqueConstraint('owner_id', 'legacy_id'), UniqueConstraint('owner_id', name='uq_business_owner'))
 
 

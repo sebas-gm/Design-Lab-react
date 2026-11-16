@@ -6,6 +6,7 @@ import { useConfirm } from "../confirmation";
 import "../styles/moderation.css";
 import RegistrationWait from "../components/RegistrationWait";
 import { registrationWaiting } from "../registration";
+import PendingBusinessDeletion from '../components/PendingBusinessDeletion';
 
 export default function BusinessStatus() {
   const { moderation, moderationError } = useLab();
@@ -76,7 +77,7 @@ export default function BusinessStatus() {
           <h1>Estado y solicitudes</h1>
           <p>
             {negocio
-              ? `${negocio.nombre} · ${negocio.estado}`
+              ? `${negocio.nombre} · ${negocio.estado === 'eliminacion' ? 'Eliminación pendiente' : negocio.estado}`
               : registrationWaiting(moderation)
                 ? "Registro temporalmente en espera tras eliminar tu negocio."
                 : puede_registrar
@@ -87,6 +88,7 @@ export default function BusinessStatus() {
       </div>
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
+      {negocio?.eliminacion_programada && <PendingBusinessDeletion business={negocio}/>}
       {!negocio && registrationWaiting(moderation) && <RegistrationWait account={moderation} />}
       {eligible && (
         <section className="moderation-card">
@@ -110,7 +112,7 @@ export default function BusinessStatus() {
               administración.
             </p>
           ) : (
-            <form className="entity-form" onSubmit={submit}>
+            <form autoComplete="off" className="entity-form" onSubmit={submit}>
               <label>
                 Tu mensaje
                 <textarea

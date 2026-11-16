@@ -175,7 +175,7 @@ function ManageVideos() {
           <button onClick={() => setCreating(true)}>Publicar un video</button>
           {(editing || creating) && <FormModal title={editing ? 'Editar video' : 'Publicar un video'} onClose={() => { setEditing(null); setCreating(false); }}>
           {(close) => (
-          <form
+          <form autoComplete="off"
             key={editing?.id || "new"}
             className="video-form entity-form"
             onSubmit={submit}

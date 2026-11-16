@@ -107,11 +107,12 @@ def test_crud_permissions_and_promotion(clients):
     assert owner.patch(f'/api/productos/{pid}/promocion', json={'promocion': True}).json()['promocion'] is True
     assert owner.put(f'/api/productos/{pid}', json={**product, 'precio': '9.00'}).status_code == 200
     assert owner.put(f'/api/negocios/{bid}', json={**BUSINESS, 'nombre': 'Nuevo nombre'}).status_code == 200
-    assert owner.delete(f'/api/negocios/{bid}').status_code == 409
+    assert owner.delete(f'/api/negocios/{bid}').status_code == 204
+    assert owner.post(f'/api/negocios/{bid}/restaurar').status_code == 200
     assert owner.get('/api/productos').json()[0]['nombre'] == product['nombre']
     assert owner.delete(f'/api/productos/{pid}').status_code == 204
     assert owner.delete(f'/api/negocios/{bid}').status_code == 204
-    assert owner.get('/api/negocios').json() == []
+    assert owner.get('/api/negocios').json()[0]['estado'] == 'eliminacion'
 
 
 def test_validation_and_csrf(clients):
@@ -227,7 +228,8 @@ def test_video_permissions_and_links(clients):
     assert owner.get('/api/videos?offset=-1').status_code == 422
     for url in ['javascript:alert(1)', 'https://youtube.com.evil.com/watch?v=M7lc1UVf-VE', 'https://127.0.0.1/video', 'https://www.youtube.com/watch?v=<script>', 'https://vm.tiktok.com/short', 'https://www.youtube.com:invalid/watch?v=M7lc1UVf-VE']:
         assert owner.post('/api/videos', json={**payload, 'url': url}).status_code == 422
-    assert owner.delete(f'/api/negocios/{bid}').status_code == 409
+    assert owner.delete(f'/api/negocios/{bid}').status_code == 204
+    assert owner.post(f'/api/negocios/{bid}/restaurar').status_code == 200
     assert owner.delete(f"/api/videos/{video['id']}").status_code == 204
     assert owner.get('/api/videos').json() == []
 
@@ -421,7 +423,8 @@ def test_system_admin_permissions_visibility_and_audit(clients):
     assert admin.get('/api/videos').json() == []
     # Its owner retains access to fix their information, but cannot bypass moderation.
     assert len(owner.get('/api/negocios').json()) == 1
-    assert owner.delete(f'/api/negocios/{business_id}').status_code == 403
+    assert owner.delete(f'/api/negocios/{business_id}').status_code == 204
+    assert owner.post(f'/api/negocios/{business_id}/restaurar').json()['estado'] == 'suspendido'
     assert owner.put(f'/api/negocios/{business_id}', json={**BUSINESS, 'estado': 'activo'}).status_code == 422
     assert admin.patch(f'/api/admin/negocios/{business_id}/estado', json={'estado': 'activo', 'motivo': 'Motivo de prueba administrativa'}).status_code == 200
     assert len(admin.get('/api/negocios').json()) == 1
@@ -638,48 +641,18 @@ def test_admin_creates_personal_user_without_replacing_session(clients):
     assert visitor.get('/api/admin/usuarios').status_code == 403
 
 
-def test_voluntary_deletion_returns_personal_and_enforces_wait_everywhere(clients):
-    from datetime import datetime, timedelta
-    from sqlalchemy.orm import Session
-    from backend.models import User
-    from backend.main import now
-    owner, admin = clients
-    uid = signup(owner, 'wait-owner@example.com').json()['id']
-    make_admin(admin)
-    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
-    published_fixture(bid)
-    before = now()
-    assert owner.delete(f'/api/negocios/{bid}').status_code == 204
-    account = owner.get('/api/auth/me').json()
-    assert account['tipo_cuenta'] == 'personal'
-    assert account['puede_registrar'] is True
-    deadline = datetime.fromisoformat(account['registro_disponible_desde'])
-    assert before + timedelta(days=15) <= deadline <= now() + timedelta(days=15)
-    state = owner.get('/api/mi-moderacion').json()
-    assert state['negocio'] is None
-    assert state['registro_disponible_desde'] == account['registro_disponible_desde']
-    assert state['historial'][0]['estado'] == 'eliminado'
-    assert owner.post('/api/negocios', json=BUSINESS).status_code == 403
-    assert owner.post('/api/importar', json={'negocios': [{**BUSINESS, 'id': 12}], 'productos': []}).status_code == 403
-    assert admin.post('/api/admin/negocios', json={**BUSINESS, 'owner_id': uid}).status_code == 403
-    assert owner.patch('/api/auth/profile', json={'registro_disponible_desde': None}).status_code == 422
-    # Authorization is independent: it cannot shorten a voluntary waiting period.
-    assert admin.patch(f'/api/admin/usuarios/{uid}/registro-negocio', json={'permitir': True, 'motivo': 'Autorización sin saltar el plazo.'}).status_code == 200
-    assert owner.post('/api/negocios', json=BUSINESS).status_code == 403
-    with Session(engine) as db:
-        db.get(User, uid).registro_disponible_desde = now() - timedelta(seconds=1)
-        db.commit()
-    assert owner.post('/api/negocios', json=BUSINESS).status_code == 201
-    assert owner.get('/api/auth/me').json()['tipo_cuenta'] == 'negocios'
-
-
 @pytest.mark.parametrize('restricted', [False, True])
 def test_only_admin_can_lift_wait_without_changing_permission(clients, restricted):
     owner, admin = clients
     uid = signup(owner, 'lift-owner@example.com').json()['id']
-    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
-    published_fixture(bid)
-    assert owner.delete(f'/api/negocios/{bid}').status_code == 204
+    # This account already had the legacy wait before recoverable deletion existed.
+    from datetime import timedelta
+    from sqlalchemy.orm import Session
+    from backend.models import User
+    from backend.main import now
+    with Session(engine) as db:
+        db.get(User, uid).registro_disponible_desde = now() + timedelta(days=15)
+        db.commit()
     make_admin(admin)
     path = f'/api/admin/usuarios/{uid}/levantar-espera'
     body = {'motivo': 'Se autoriza levantar la espera tras verificar la cuenta.', 'nota_interna': 'DETALLE_PRIVADO_ESPERA'}

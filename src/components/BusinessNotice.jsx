@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { useLab } from "../context";
 import "../styles/moderation.css";
+import { deletionDate } from '../businessDeletion';
 
 export default function BusinessNotice() {
   const { user, moderation } = useLab();
   if (user?.is_admin || !moderation) return null;
+  if (moderation.negocio?.eliminacion_programada) return <section className="business-notice" role="status"><div><strong>Tu negocio tiene una eliminación pendiente</strong><p>Puedes restaurarlo antes del {deletionDate(moderation.negocio.eliminacion_programada)} (hora de Bolivia).</p></div><Link to="/estado-negocio">Restaurar negocio →</Link></section>;
   const state =
     moderation.negocio?.estado ||
     (!moderation.puede_registrar
