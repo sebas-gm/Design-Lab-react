@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLab } from "../context";
 import { api } from "../api";
+import FormModal from "../components/FormModal";
+import EntityForm from "../components/EntityForm";
 import "../styles/dashboard.css";
 
 function Icon({ name }) {
@@ -10,6 +12,7 @@ function Icon({ name }) {
 }
 
 export default function Dashboard() {
+  const [creating, setCreating] = useState(false);
   const { negocios, productos, user, loading, error } = useLab();
   const business = negocios.find((n) => n.owner_id === user.id);
   const products = productos.filter((p) => p.negocioId === business?.id);
@@ -41,8 +44,11 @@ export default function Dashboard() {
     </header>
     {(error || extra.error) && <p role="alert" className="owner-error">{error || extra.error}</p>}
     <div className="owner-metrics">{stats.map(([icon, label, count, to]) => <Link key={label} to={to} className={`owner-metric tone-${icon}`}><span className="owner-icon"><Icon name={icon}/></span><div><strong>{count}</strong><span>{label}</span></div></Link>)}</div>
+    {creating && !archived && <FormModal title="Registrar producto" onClose={() => setCreating(false)}>
+      {(close) => <EntityForm kind="productos" onSaved={() => setCreating(false)} onCancel={close} />}
+    </FormModal>}
     <div className="owner-grid">
-      <section className="owner-card"><h2><span className="owner-gold" aria-hidden="true"></span> Acciones rápidas</h2><div className="owner-actions">{actions.map(([icon,label,to,disabled]) => disabled ? <div className={`owner-action tone-${icon} unavailable`} key={label}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><small>{archived ? "Negocio archivado" : "Requiere negocio"}</small></div> : <Link key={label} to={to} className={`owner-action tone-${icon}`}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><span className="owner-arrow" aria-hidden="true">›</span></Link>)}</div></section>
+      <section className="owner-card"><h2><span className="owner-gold" aria-hidden="true"></span> Acciones rápidas</h2><div className="owner-actions">{actions.map(([icon,label,to,disabled]) => disabled ? <div className={`owner-action tone-${icon} unavailable`} key={label}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><small>{archived ? "Negocio archivado" : "Requiere negocio"}</small></div> : <Link key={label} to={to} onClick={to === "/registrar-producto" ? (event) => { event.preventDefault(); setCreating(true); } : undefined} className={`owner-action tone-${icon}`}><span className="owner-icon"><Icon name={icon}/></span><span>{label}</span><span className="owner-arrow" aria-hidden="true">›</span></Link>)}</div></section>
       <section className="owner-card owner-recent"><div className="owner-card-heading"><h2><Icon name="clock"/> Novedades y avisos</h2><Link to="/notificaciones">Ver todo →</Link></div>{extra.pending ? <p role="status">Cargando avisos…</p> : extra.notices.length ? <ul>{extra.notices.map((n) => <li key={n.id}><span className="owner-icon"><Icon name="shop"/></span><div><strong>{n.titulo}</strong><p>{n.mensaje}</p><time dateTime={`${n.fecha}Z`}>{new Date(`${n.fecha}Z`).toLocaleString("es")}</time></div></li>)}</ul> : <div className="owner-empty"><Icon name="clock"/><p>Aún no tienes avisos. Aquí aparecerán las notificaciones sobre tu negocio.</p></div>}</section>
     </div>
   </main>;

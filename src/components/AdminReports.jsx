@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useConfirm } from '../confirmation';
+import FormModal from './FormModal';
 import { reportReasons, reportStatus } from '../reportReasons';
 import '../styles/reports.css';
 
@@ -28,7 +29,7 @@ export default function AdminReports() {
     {visible.map((item) => <article className="report-card" key={item.id}><div className="report-card-heading"><h2>#{item.id} · {item.nombre_objetivo}</h2><span className="report-status">{reportStatus[item.estado]}</span></div><p><strong>{reportReasons.find(([key]) => key === item.motivo)?.[1]}</strong> · {item.tipo}</p><p className="report-text">{item.explicacion}</p><small>Reportado por {item.reportante} ({item.correo_reportante}) · {new Date(`${item.fecha}Z`).toLocaleString('es')}</small>{!item.objetivo_existe && <p>El elemento fue eliminado. Se conserva el reporte para su revisión.</p>}
       <div className="admin-actions report-actions"><Link to={`/negocios/${item.negocio_id}`}>Consultar negocio</Link><Link to={item.tipo === 'producto' ? '/admin/contenido' : '/admin/negocios'}>Gestionar elemento</Link>{item.estado === 'pendiente' && <button disabled={busy} onClick={() => update(item, { estado: 'en_revision' })}>Marcar en revisión</button>}{item.estado !== 'resuelto' && <button disabled={busy} onClick={() => setEditing(item.id)}>Resolver</button>}</div>
       {item.estado === 'resuelto' && <div className="report-response"><strong>{item.resultado === 'medidas' ? 'Resuelto con medidas' : 'Descartado'}</strong><p>{item.respuesta}</p></div>}
-      {editing === item.id && item.estado !== 'resuelto' && <form className="report-form" onSubmit={(e) => { e.preventDefault(); update(item, { ...Object.fromEntries(new FormData(e.currentTarget)), estado: 'resuelto' }); }}><fieldset disabled={busy}><label>Resultado<select name="resultado" required><option value="">Selecciona el resultado</option><option value="medidas">Se tomaron medidas</option><option value="descartado">Descartar reporte</option></select></label><label>Respuesta visible para quien reportó<textarea name="respuesta" required minLength={5} maxLength={2000} rows={4} /></label><div className="admin-actions"><button>Guardar resolución</button><button type="button" onClick={() => setEditing(null)}>Cancelar</button></div></fieldset></form>}
+      {editing === item.id && item.estado !== 'resuelto' && <FormModal title={`Resolver reporte #${item.id}`} onClose={() => setEditing(null)}>{(close) => <form className="report-form" onSubmit={(e) => { e.preventDefault(); update(item, { ...Object.fromEntries(new FormData(e.currentTarget)), estado: 'resuelto' }); }}><fieldset disabled={busy}><label>Resultado<select name="resultado" required><option value="">Selecciona el resultado</option><option value="medidas">Se tomaron medidas</option><option value="descartado">Descartar reporte</option></select></label><label>Respuesta visible para quien reportó<textarea name="respuesta" required minLength={5} maxLength={2000} rows={4} /></label><div className="admin-actions"><button>Guardar resolución</button><button type="button" onClick={close}>Cancelar</button></div></fieldset>{error && <p role="alert">{error}</p>}</form>}</FormModal>}
     </article>)}
   </section>;
 }

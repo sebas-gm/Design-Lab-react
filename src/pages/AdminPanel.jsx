@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useConfirm } from "../confirmation";
@@ -7,6 +7,7 @@ import AdminDecision from "../components/AdminDecision";
 import AdminUserForm from "../components/AdminUserForm";
 import AdminOverview from "../components/AdminOverview";
 import AdminReports from "../components/AdminReports";
+import FormModal from "../components/FormModal";
 import { registrationWaiting } from "../registration";
 import "../styles/admin.css";
 
@@ -102,17 +103,6 @@ export default function AdminPanel() {
   const confirm = useConfirm();
   const [data, setData] = useState(empty);
   const [editor, setEditor] = useState(null);
-  const editorElement = useRef(null);
-  useEffect(() => {
-    if (!editor) return;
-    const frame = window.requestAnimationFrame(() => {
-      const element = editorElement.current;
-      if (!element) return;
-      element.querySelector('input:not([type="hidden"]), select, textarea')?.focus({ preventScroll: true });
-      element.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [editor, section]);
   const [decision, setDecision] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -167,12 +157,10 @@ export default function AdminPanel() {
   }
   async function changeStatus(item, estado) {
     setDecision({ type: "status", item, estado });
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   async function remove(kind, item) {
     if (kind === "negocios") {
       setDecision({ type: "delete", item });
-      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (
@@ -276,16 +264,20 @@ export default function AdminPanel() {
       )}
       {notice && <p role="status">{notice}</p>}
       {decision && (
+        <FormModal title="Decisión administrativa" onClose={() => setDecision(null)}>
+        {(close) => (
         <AdminDecision
           key={`${decision.type}-${decision.item.id}-${decision.estado || decision.approve}`}
           decision={decision}
-          onCancel={() => setDecision(null)}
+          onCancel={close}
           onSaved={async () => {
             setDecision(null);
             await load();
             setNotice("Decisión guardada y notificación enviada.");
           }}
         />
+        )}
+        </FormModal>
       )}
       {loading ? (
         <p role="status">Cargando administración…</p>
@@ -314,7 +306,9 @@ export default function AdminPanel() {
             <>
               <button onClick={() => setEditor({ kind: "usuarios", item: null })}>Agregar usuario</button>
               {editor?.kind === "usuarios" && (
-                <AdminUserForm onSaved={saved} onCancel={() => setEditor(null)} />
+                <FormModal title="Agregar usuario" onClose={() => setEditor(null)}>
+                  {(close) => <AdminUserForm onSaved={saved} onCancel={close} />}
+                </FormModal>
               )}
             </>
           )}
@@ -336,8 +330,9 @@ export default function AdminPanel() {
             </div>
           )}
           {editor && ["negocios", "contenido"].includes(section) && (
+            <FormModal title={`${editor.item ? 'Editar' : 'Agregar'} ${editor.kind === 'negocios' ? 'negocio' : editor.kind === 'productos' ? 'producto' : 'video'}`} onClose={() => setEditor(null)} key={`${editor.kind}-${editor.item?.id || 'new'}`}>
+            {(close) => (
             <section
-              ref={editorElement}
               className="admin-editor"
               key={`${editor.kind}-${editor.item?.id || "new"}`}
             >
@@ -354,7 +349,7 @@ export default function AdminPanel() {
                   initial={editor.item}
                   businesses={data.negocios}
                   onSaved={saved}
-                  onCancel={() => setEditor(null)}
+                  onCancel={close}
                 />
               ) : (
                 <EntityForm
@@ -364,10 +359,12 @@ export default function AdminPanel() {
                   owners={data.usuarios}
                   availableBusinesses={data.negocios}
                   onSaved={saved}
-                  onCancel={() => setEditor(null)}
+                  onCancel={close}
                 />
               )}
             </section>
+            )}
+            </FormModal>
           )}
           {section === "negocios" && (
             <div className="admin-list">

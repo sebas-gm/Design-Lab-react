@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLab } from "../context";
 import { useConfirm } from "../confirmation";
 import { api } from "../api";
 import EntityForm from "../components/EntityForm";
+import FormModal from "../components/FormModal";
 import LocationMap from "../components/LocationMap";
 import FacadeImage from "../components/FacadeImage";
 import { formatBusinessDays } from "../businessDays";
@@ -19,12 +20,8 @@ export default function AdministrarNegocios() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const editor = useRef(null);
   const business = negocios.find((n) => n.owner_id === user.id);
   const archived = business?.estado === "archivado";
-  useEffect(() => {
-    if (editing) (editor.current?.querySelector(`[data-time-name="${editing}"] select`) || editor.current?.querySelector(`[name="${editing}"]`))?.focus();
-  }, [editing]);
 
   async function edit(field = "nombre") {
     if (archived || busy) return;
@@ -62,7 +59,9 @@ export default function AdministrarNegocios() {
       {business.estado !== "activo" && <section className="my-business-state"><h2>{archived ? "Negocio archivado · solo lectura" : "Tu negocio está suspendido"}</h2><p>{decision?.motivo || "Consulta el historial para conocer el motivo de esta decisión."}</p><p>{archived ? "Tus datos se conservan. Solicita restauración para volver a administrarlos." : "Puedes corregir la información y solicitar una revisión."}</p><Link to="/estado-negocio">{archived ? "Solicitar restauración" : "Solicitar revisión"} →</Link></section>}
       {error && <p className="my-business-feedback" role="alert">{error}</p>}
       {notice && <p className="my-business-feedback" role="status">{notice}</p>}
-      {editing && !archived && <section className="my-business-section" ref={editor}><h2>Editar mi negocio</h2><p>Puedes actualizar los datos, las fotos, la ubicación y los horarios.</p><EntityForm key={business.id} kind="negocios" initial={business} onCancel={() => setEditing("")} onSaved={() => { setEditing(""); setNotice("Los datos de tu negocio se guardaron correctamente."); }} /></section>}
+      {editing && !archived && <FormModal title="Editar mi negocio" initialField={editing} onClose={() => setEditing('')}>
+        {(close) => <EntityForm key={business.id} kind="negocios" initial={business} onCancel={close} onSaved={() => { setEditing(''); setNotice('Los datos de tu negocio se guardaron correctamente.'); }} />}
+      </FormModal>}
       <div className="my-business-grid">
         <section className="my-business-section"><div className="my-business-section-heading"><h2>Información del negocio</h2>{editButton("descripcion")}</div><p className="my-business-description">{business.descripcion}</p><dl><div><dt>Categoría</dt><dd>{business.categoria}</dd></div><div><dt>Nombre comercial</dt><dd>{business.nombre}</dd></div></dl></section>
         <section className="my-business-section"><div className="my-business-section-heading"><h2>Contacto</h2>{editButton("telefono")}</div><dl><div><dt>Teléfono / WhatsApp</dt><dd>{business.telefono || "Sin registrar"}</dd></div><div><dt>Correo electrónico</dt><dd>{business.correo_contacto || "Sin registrar"}</dd></div></dl></section>

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useLab } from "../context";
 import VideoCard from "../components/VideoCard";
+import FormModal from "../components/FormModal";
 import { useConfirm } from "../confirmation";
 import "../styles/videos.css";
 
@@ -12,6 +13,7 @@ export default function Videos({ manage = false }) {
   const mine = negocios.filter((n) => n.owner_id === user?.id);
   const [videos, setVideos] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -74,6 +76,7 @@ export default function Videos({ manage = false }) {
           : [item, ...previous],
       );
       setEditing(null);
+      setCreating(false);
       form.reset();
       setNotice("Video guardado. Ya aparece en la pestaña Videos.");
     } catch (e) {
@@ -158,6 +161,10 @@ export default function Videos({ manage = false }) {
       </div>
       {manage ? (
         mine.length ? (
+          <>
+          <button onClick={() => setCreating(true)}>Publicar un video</button>
+          {(editing || creating) && <FormModal title={editing ? 'Editar video' : 'Publicar un video'} onClose={() => { setEditing(null); setCreating(false); }}>
+          {(close) => (
           <form
             key={editing?.id || "new"}
             className="video-form entity-form"
@@ -213,18 +220,22 @@ export default function Videos({ manage = false }) {
                     ? "Guardar cambios"
                     : "Publicar video"}
               </button>
-              {editing && (
+              {
                 <button
                   className="secondary-button"
                   type="button"
                   disabled={busy}
-                  onClick={() => setEditing(null)}
+                  onClick={close}
                 >
                   Cancelar
                 </button>
-              )}
+              }
             </div>
+            {error && <p role="alert">{error}</p>}
           </form>
+          )}
+          </FormModal>}
+          </>
         ) : (
           <div className="empty-state">
             <h2>Tu negocio tiene una historia</h2>
@@ -295,7 +306,6 @@ export default function Videos({ manage = false }) {
                     )
                       return;
                     setEditing(video);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
                   Editar

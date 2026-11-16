@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useLab } from "../context";
 import EntityForm from "./EntityForm";
+import FormModal from "./FormModal";
 import { useConfirm } from "../confirmation";
 import "../styles/administrarNegocios.css";
 import "../styles/administrarProductos.css";
@@ -14,6 +15,7 @@ export default function ManageEntities({ kind, promotions = false }) {
   const [editing, setEditing] = useState(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
   const mine = negocios.filter((n) => n.owner_id === user.id);
   const archived = mine.some((n) => n.estado === "archivado");
   const items =
@@ -51,13 +53,9 @@ export default function ManageEntities({ kind, promotions = false }) {
       {!archived &&
         user.puede_registrar !== false &&
         (kind !== "negocios" || !mine.length) && (
-          <Link
-            to={
-              kind === "negocios" ? "/registrar-negocio" : "/registrar-producto"
-            }
-          >
+          <button onClick={() => setCreating(true)}>
             Agregar {kind === "negocios" ? "negocio" : "producto"}
-          </Link>
+          </button>
         )}
       {kind === "negocios" && mine.length > 0 && (
         <p>
@@ -67,17 +65,15 @@ export default function ManageEntities({ kind, promotions = false }) {
       )}
       {error && <p role="alert">{error}</p>}
       {!items.length && <p>Aún no tienes registros.</p>}
+      {(editing || creating) && !archived && (
+        <FormModal title={`${editing ? 'Editar' : 'Agregar'} ${kind === 'negocios' ? 'negocio' : 'producto'}`} onClose={() => { setEditing(null); setCreating(false); }}>
+          {(close) => <EntityForm kind={kind} initial={editing} onSaved={() => { setEditing(null); setCreating(false); }} onCancel={close} />}
+        </FormModal>
+      )}
       <div className="lista-negocios">
         {items.map((item) => (
           <article className="negocio-admin" key={item.id}>
-            {editing?.id === item.id && !archived ? (
-              <EntityForm
-                kind={kind}
-                initial={item}
-                onSaved={() => setEditing(null)}
-                onCancel={() => setEditing(null)}
-              />
-            ) : (
+            {
               <>
                 {item.imagen && (
                   <img
@@ -126,7 +122,7 @@ export default function ManageEntities({ kind, promotions = false }) {
                   </div>
                 )}
               </>
-            )}
+            }
           </article>
         ))}
       </div>

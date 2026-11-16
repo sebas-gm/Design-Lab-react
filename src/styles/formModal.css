@@ -1,0 +1,20 @@
+.form-modal { --modal-padding: clamp(12px, 3vw, 32px); position: fixed; inset: 0; margin: 0; padding: var(--modal-padding); width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; background: transparent; overflow: hidden; color: #2c2040; }
+.form-modal[open] { display: grid; align-items: start; justify-items: center; }
+.form-modal::backdrop { background: #1d1028b8; backdrop-filter: blur(3px); }
+.form-modal-panel { display: flex; flex-direction: column; max-height: calc(100dvh - 2 * var(--modal-padding)); overflow: hidden; width: min(860px, 100%); min-width: 0; background: #fdfbff; border: 1px solid #e4d7f3; border-radius: 20px; box-shadow: 0 24px 90px #16092555; margin-block: auto; }
+.form-modal-heading { position: relative; flex-shrink: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 25px; background: #f9f3ff; border-bottom: 1px solid #e8dff2; border-radius: 20px 20px 0 0; }
+.form-modal-heading span { font-size: 10px; letter-spacing: 1.8px; color: #9b70c0; }
+.form-modal-heading h2 { font-size: 21px; color: #482369; margin: 5px 0 0; }
+.form-modal-heading .form-modal-close { width: 36px; height: 36px; padding: 0; border: 1px solid #e4d4f1; background: #eee3f9; color: #744295; border-radius: 50%; flex-shrink: 0; }
+.form-modal-content { padding: 25px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.form-modal .admin-editor, .form-modal .profile-editor, .form-modal .my-business-section, .form-modal .video-form { margin: 0; max-width: none; padding: 0; border: 0; box-shadow: none; background: transparent; }
+.form-modal .entity-form { width: 100%; max-width: none; margin: 0; }
+.form-modal .entity-form > button { margin-right: 12px; margin-top: 14px; }
+.form-modal-content > .admin-editor > h2, .form-modal-content > .profile-editor > h2 { display: none; }
+.form-modal-discard { flex-shrink: 0; max-height: 35dvh; overflow-y: auto; z-index: 3; margin: 16px 25px 0; padding: 18px; background: #fff6e8; border: 1px solid #e7ceaa; border-radius: 12px; font-size: 13px; }
+.form-modal-discard p { font-size: 12px; color: #8b7358; margin-block: 7px 12px; }
+.form-modal-discard > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.form-modal-discard button { font-size: 12px; }
+.form-modal-discard button:last-child { background: #fff0f4; color: #a14b6a; border-color: #eacbd6; }
+.form-modal-busy { flex-shrink: 0; margin: 16px 25px 0; padding: 12px; color: #8a698e; background: #f5ecfc; border-radius: 10px; font-size: 12px; }
+@media (max-width: 600px) { .form-modal { --modal-padding: 10px; } .form-modal-content { padding: 18px; } .form-modal-heading { padding: 16px 18px; } .form-modal-heading h2 { font-size: 18px; } .form-modal-panel { border-radius: 15px; } .form-modal-discard { margin-inline: 18px; } }

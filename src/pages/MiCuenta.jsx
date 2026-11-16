@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useLab } from "../context";
 import { api } from "../api";
 import ImagePicker from "../components/ImagePicker";
+import FormModal from "../components/FormModal";
 import { useConfirm } from "../confirmation";
 import "../styles/profile.css";
 
@@ -211,6 +212,8 @@ export default function MiCuenta() {
       </section>
 
       {editing && (
+        <FormModal title="Editar perfil" onClose={() => { setEditing(false); setPhoto(null); setError(''); }}>
+        {(close) => (
         <section id="profile-editor" className="profile-editor">
           <h2>Editar perfil</h2>
           <form className="entity-form" onSubmit={saveProfile}>
@@ -250,17 +253,16 @@ export default function MiCuenta() {
                 type="button"
                 className="secondary-button"
                 disabled={busy}
-                onClick={() => {
-                  setEditing(false);
-                  setPhoto(null);
-                  setError("");
-                }}
+                onClick={close}
               >
                 Cancelar
               </button>
             </div>
+            {error && <p role="alert">{error}</p>}
           </form>
         </section>
+        )}
+        </FormModal>
       )}
       {error && (
         <p className="profile-feedback" role="alert">
