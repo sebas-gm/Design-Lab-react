@@ -140,7 +140,7 @@ class AdminBusinessIn(BusinessIn):
 
 
 class BusinessStatus(Input):
-    estado: Literal['activo', 'suspendido', 'archivado']
+    estado: Literal['activo', 'suspendido', 'archivado', 'pendiente']
     motivo: str = Field(min_length=5, max_length=2000)
     nota_interna: str = Field(default='', max_length=2000)
 
@@ -162,3 +162,9 @@ class ReviewDecision(Input):
 class RegistrationPermission(Input):
     permitir: bool
     motivo: str = Field(min_length=5, max_length=2000)
+
+
+class PublicationDecision(Input):
+    decision: Literal['aprobar', 'correcciones', 'rechazar']
+    motivo: str = Field(min_length=5, max_length=2000)
+    version: int = Field(gt=0)

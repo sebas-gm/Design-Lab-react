@@ -7,6 +7,7 @@ import AdminDecision from "../components/AdminDecision";
 import AdminUserForm from "../components/AdminUserForm";
 import AdminOverview from "../components/AdminOverview";
 import AdminReports from "../components/AdminReports";
+import AdminPublications from "../components/AdminPublications";
 import FormModal from "../components/FormModal";
 import { registrationWaiting } from "../registration";
 import "../styles/admin.css";
@@ -213,6 +214,7 @@ export default function AdminPanel() {
     historial: "Historial de administración",
     solicitudes: "Solicitudes de propietarios",
     reportes: "Reportes de usuarios",
+    publicaciones: "Publicaciones por revisar",
   };
 
   return (
@@ -227,6 +229,7 @@ export default function AdminPanel() {
           disabled={busy || loading}
           onClick={() => {
             if (section === "reportes") window.dispatchEvent(new Event('navishop:reports-refresh'));
+            if (section === "publicaciones") window.dispatchEvent(new Event('navishop:publications-refresh'));
             load().catch((e) => setError(e.message));
           }}
         >
@@ -242,6 +245,7 @@ export default function AdminPanel() {
           ["historial", "Historial"],
           ["solicitudes", "Solicitudes"],
           ["reportes", "Reportes"],
+          ["publicaciones", "Publicaciones"],
         ].map(([path, label]) => (
           <Link
             key={path}
@@ -284,6 +288,7 @@ export default function AdminPanel() {
       ) : (
         <>
           {section === "reportes" && <AdminReports />}
+          {section === "publicaciones" && <AdminPublications />}
           {!section && (
             <>
               <AdminOverview data={data} onCreate={(kind) => {
@@ -396,12 +401,12 @@ export default function AdminPanel() {
                     <button disabled={busy} onClick={() => edit("negocios", b)}>
                       Editar / asignar propietario
                     </button>
-                    {b.estado !== "activo" && (
+                    {['suspendido', 'archivado'].includes(b.estado) && (
                       <button
                         disabled={busy}
-                        onClick={() => changeStatus(b, "activo")}
+                        onClick={() => changeStatus(b, b.publicacion_aprobada ? "activo" : "pendiente")}
                       >
-                        Restaurar
+                        {b.publicacion_aprobada ? 'Restaurar' : 'Reabrir revisión'}
                       </button>
                     )}
                     {b.estado === "activo" && (

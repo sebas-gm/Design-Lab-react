@@ -48,7 +48,7 @@ export default function EntityForm({
     const entity = business ? "negocio" : "producto";
     const question = initial
       ? `¿Quieres guardar los cambios de este ${entity}?`
-      : `¿Quieres registrar y publicar este ${entity}?${business && user.tipo_cuenta === "personal" && !adminMode ? " Se activará tu cuenta de negocios." : ""}`;
+      : `¿Quieres registrar este ${entity}?${business && !adminMode ? " Se activará tu cuenta de negocios y se enviará a revisión antes de publicarlo." : ""}`;
     const values = Object.fromEntries(new FormData(event.currentTarget));
     if (adminMode && business) values.owner_id = Number(values.owner_id);
     if (!(await confirm(question, "save"))) return;
@@ -347,7 +347,7 @@ export default function EntityForm({
           : initial
             ? "Guardar cambios"
             : business
-              ? "Registrar y publicar negocio"
+              ? adminMode ? "Registrar y publicar negocio" : "Registrar y solicitar publicación"
               : "Guardar producto"}
       </button>
       {onCancel && (

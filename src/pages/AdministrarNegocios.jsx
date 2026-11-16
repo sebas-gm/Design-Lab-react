@@ -13,7 +13,7 @@ import { registrationWaiting } from "../registration";
 import "../styles/myBusiness.css";
 
 export default function AdministrarNegocios() {
-  const { user, negocios, productos, loading, error: catalogError, refresh, moderation } = useLab();
+  const { user, negocios, productos, loading, error: catalogError, refresh, moderation, publication } = useLab();
   const confirm = useConfirm();
   const navigate = useNavigate();
   const [editing, setEditing] = useState("");
@@ -21,6 +21,7 @@ export default function AdministrarNegocios() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const business = negocios.find((n) => n.owner_id === user.id);
+  const editableBusiness = business && publication?.negocio_id === business.id && ['pendiente', 'correcciones', 'rechazado'].includes(publication.estado) ? { ...business, ...publication.propuesta } : business;
   const archived = business?.estado === "archivado";
 
   async function edit(field = "nombre") {
@@ -56,11 +57,11 @@ export default function AdministrarNegocios() {
         <div className="my-business-cover">{business.imagen ? <FacadeImage key={business.imagen} src={business.imagen} alt={`Fachada de ${business.nombre}`} /> : <span>Tu negocio en Navishop</span>}</div>
         <div className="my-business-identity">{business.logo && <img className="my-business-logo" src={business.logo} alt={`Logo de ${business.nombre}`} onError={(e) => { e.currentTarget.style.display = "none"; }} />}<div><span className="my-business-category">{business.categoria}</span><h2>{business.nombre}</h2><p>{business.direccion}</p></div><button disabled={archived || busy} onClick={() => edit()}>Editar datos del negocio</button></div>
       </section>
-      {business.estado !== "activo" && <section className="my-business-state"><h2>{archived ? "Negocio archivado · solo lectura" : "Tu negocio está suspendido"}</h2><p>{decision?.motivo || "Consulta el historial para conocer el motivo de esta decisión."}</p><p>{archived ? "Tus datos se conservan. Solicita restauración para volver a administrarlos." : "Puedes corregir la información y solicitar una revisión."}</p><Link to="/estado-negocio">{archived ? "Solicitar restauración" : "Solicitar revisión"} →</Link></section>}
+      {["suspendido", "archivado"].includes(business.estado) && <section className="my-business-state"><h2>{archived ? "Negocio archivado · solo lectura" : "Tu negocio está suspendido"}</h2><p>{decision?.motivo || "Consulta el historial para conocer el motivo de esta decisión."}</p><p>{archived ? "Tus datos se conservan. Solicita restauración para volver a administrarlos." : "Puedes corregir la información y solicitar una revisión."}</p><Link to="/estado-negocio">{archived ? "Solicitar restauración" : "Solicitar revisión"} →</Link></section>}
       {error && <p className="my-business-feedback" role="alert">{error}</p>}
       {notice && <p className="my-business-feedback" role="status">{notice}</p>}
       {editing && !archived && <FormModal title="Editar mi negocio" initialField={editing} onClose={() => setEditing('')}>
-        {(close) => <EntityForm key={business.id} kind="negocios" initial={business} onCancel={close} onSaved={() => { setEditing(''); setNotice('Los datos de tu negocio se guardaron correctamente.'); }} />}
+        {(close) => <EntityForm key={business.id} kind="negocios" initial={editableBusiness} onCancel={close} onSaved={() => { setEditing(''); setNotice('Datos guardados. Si cambiaste nombre, dirección o fachada, espera la aprobación antes de verlos publicados.'); }} />}
       </FormModal>}
       <div className="my-business-grid">
         <section className="my-business-section"><div className="my-business-section-heading"><h2>Información del negocio</h2>{editButton("descripcion")}</div><p className="my-business-description">{business.descripcion}</p><dl><div><dt>Categoría</dt><dd>{business.categoria}</dd></div><div><dt>Nombre comercial</dt><dd>{business.nombre}</dd></div></dl></section>

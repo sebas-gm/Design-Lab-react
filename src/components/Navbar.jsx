@@ -29,6 +29,7 @@ const adminLinks = [
   ["/admin/historial", "Historial", "grid"],
   ["/admin/solicitudes", "Solicitudes", "grid"],
   ["/admin/reportes", "Reportes", "grid"],
+  ["/admin/publicaciones", "Publicaciones", "shop"],
   ["/mi-cuenta", "Mi cuenta", "user"],
 ];
 

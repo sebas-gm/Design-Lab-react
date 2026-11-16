@@ -189,8 +189,14 @@ def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get
         raise HTTPException(403, 'Tu cuenta necesita autorización administrativa para registrar otro negocio. Consulta Estado y solicitudes.')
     if db.scalar(select(Business.id).where(Business.owner_id == user.id).with_for_update()):
         raise HTTPException(409, 'Tu cuenta ya tiene un negocio. Puedes editarlo desde Mi negocio.')
-    item = Business(**data.model_dump(), owner_id=user.id)
+    from backend.publication import complete, queue
+    if not user.is_admin:
+        complete(data)
+    item = Business(**data.model_dump(), owner_id=user.id, estado='activo' if user.is_admin else 'pendiente', publicacion_aprobada=user.is_admin)
     db.add(item)
+    db.flush()
+    if not user.is_admin:
+        queue(db, item, data)
     # Activation and the first business are saved atomically.
     user.tipo_cuenta = 'negocios'
     try:
@@ -203,9 +209,10 @@ def create_business(data: BusinessIn, user=Depends(current_user), db=Depends(get
 
 @app.put('/api/negocios/{item_id}')
 def update_business(item_id: int, data: BusinessIn, user=Depends(current_user), db=Depends(get_db)):
+    db.scalar(select(Business.id).where(Business.id == item_id).with_for_update())
     item = owned(db, item_id, user)
-    for key, value in data.model_dump().items():
-        setattr(item, key, value)
+    from backend.publication import owner_update
+    owner_update(db, item, data)
     db.commit()
     return serialize(item)
 
@@ -286,9 +293,12 @@ def import_legacy(data: ImportData, user=Depends(current_user), db=Depends(get_d
     for old in data.negocios:
         item = db.scalar(select(Business).where(Business.owner_id == user.id, Business.legacy_id == str(old.id)))
         if not item:
-            item = Business(**old.model_dump(exclude={'id'}), owner_id=user.id, legacy_id=str(old.id))
+            item = Business(**old.model_dump(exclude={'id'}), owner_id=user.id, legacy_id=str(old.id), estado='activo' if user.is_admin else 'pendiente', publicacion_aprobada=user.is_admin)
             db.add(item)
             db.flush()
+            if not user.is_admin:
+                from backend.publication import queue
+                queue(db, item, BusinessIn.model_validate(old.model_dump(exclude={'id'})))
         mapping[old.id] = item.id
     for old in data.productos:
         if old.negocioId not in mapping:
@@ -363,4 +373,6 @@ from backend.admin import router as admin_router
 app.include_router(admin_router)
 from backend.reports import router as reports_router
 app.include_router(reports_router)
+from backend.publication import router as publication_router
+app.include_router(publication_router)
 app.mount('/api/uploads', StaticFiles(directory=UPLOAD_DIR, check_dir=False), name='uploads')

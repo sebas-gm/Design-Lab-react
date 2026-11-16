@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS businesses (
 	hora_apertura VARCHAR(5) NOT NULL DEFAULT '',
 	hora_cierre VARCHAR(5) NOT NULL DEFAULT '',
 	dias_atencion VARCHAR(60) NOT NULL DEFAULT '',
+	publicacion_aprobada BOOL NOT NULL DEFAULT 0,
 	logo VARCHAR(2048) NOT NULL DEFAULT '',
 	estado VARCHAR(16) NOT NULL DEFAULT 'activo',
 	PRIMARY KEY (id),
@@ -144,4 +145,20 @@ CREATE TABLE IF NOT EXISTS reports (
     FOREIGN KEY (reporter_id) REFERENCES users(id),
     INDEX ix_reports_reporter_id (reporter_id),
     INDEX ix_reports_negocio_id (negocio_id)
+);
+
+CREATE TABLE IF NOT EXISTS business_applications (
+    id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    negocio_id INTEGER NOT NULL UNIQUE,
+    owner_id INTEGER NOT NULL,
+    propuesta TEXT NOT NULL,
+    estado VARCHAR(16) NOT NULL DEFAULT 'pendiente',
+    motivo TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    envios INTEGER NOT NULL DEFAULT 1,
+    ventana_desde DATETIME NOT NULL,
+    fecha DATETIME NOT NULL,
+    actualizada DATETIME NOT NULL,
+    FOREIGN KEY (owner_id) REFERENCES users(id),
+    INDEX ix_business_applications_owner_id (owner_id)
 );

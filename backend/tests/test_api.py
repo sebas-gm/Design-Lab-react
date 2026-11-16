@@ -10,7 +10,8 @@ from backend.database import Base
 
 ORIGIN = {'Origin': 'http://localhost:5173'}
 BUSINESS = {'nombre': 'Café', 'categoria': 'Comida', 'direccion': 'Cerca del instituto',
-            'descripcion': 'Desayunos', 'latitud': -16.5, 'longitud': -68.1}
+            'descripcion': 'Desayunos', 'latitud': -16.5, 'longitud': -68.1,
+            'telefono': '71234567', 'correo_contacto': 'negocio@example.com', 'imagen': 'https://example.com/fachada.jpg'}
 
 
 @pytest.fixture
@@ -23,6 +24,23 @@ def clients():
 def signup(client, correo):
     return client.post('/api/auth/register', json={'nombre': 'Usuario', 'correo': correo,
                                                   'contrasena': 'Prueba-segura-2026'})
+
+
+def published_fixture(business_id):
+    """Older catalog/moderation scenarios start with an already approved business.
+
+    The publication workflow itself is exercised separately through the real API.
+    """
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+    from backend.models import Business, BusinessApplication
+    with Session(engine) as db:
+        business = db.get(Business, business_id)
+        business.estado, business.publicacion_aprobada = 'activo', True
+        application = db.scalar(select(BusinessApplication).where(BusinessApplication.negocio_id == business_id))
+        if application:
+            application.estado = 'aprobado'
+        db.commit()
 
 
 def test_auth_and_session(clients):
@@ -47,6 +65,7 @@ def test_crud_permissions_and_promotion(clients):
     signup(other, 'other@example.com')
     business = owner.post('/api/negocios', json=BUSINESS).json()
     bid = business['id']
+    published_fixture(bid)
     assert other.put(f'/api/negocios/{bid}', json=BUSINESS).status_code == 403
     product = {'nombre': 'Café con leche', 'precio': '8.50', 'descripcion': 'Caliente', 'negocioId': bid}
     assert other.post('/api/productos', json=product).status_code == 403
@@ -147,6 +166,7 @@ def test_additive_migration_preserves_existing_business():
     with isolated.connect() as connection:
         row = connection.execute(text('SELECT nombre, telefono, logo FROM businesses')).one()
         assert row == ('Anterior', '', '')
+        assert connection.scalar(text('SELECT publicacion_aprobada FROM businesses')) == 1
     isolated.dispose()
 
 
@@ -157,6 +177,7 @@ def test_video_permissions_and_links(clients):
     signup(owner, 'video-owner@example.com')
     signup(other, 'video-other@example.com')
     bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
     payload = {'negocioId': bid, 'titulo': 'Nuestro negocio', 'url': 'https://youtu.be/M7lc1UVf-VE'}
     assert other.post('/api/videos', json=payload).status_code == 403
     response = owner.post('/api/videos', json=payload)
@@ -425,6 +446,7 @@ def test_moderation_reasons_reviews_and_private_notes(clients):
     make_admin(admin)
     signup(owner, 'moderation-owner@example.com')
     bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
     path = f'/api/admin/negocios/{bid}/estado'
     assert admin.patch(path, json={'estado': 'suspendido'}).status_code == 422
     assert admin.patch(path, json={'estado': 'suspendido', 'motivo': 'Corrige los horarios publicados.', 'nota_interna': 'NOTA_PRIVADA_DE_ADMIN'}).status_code == 200
@@ -461,6 +483,7 @@ def test_archived_readonly_stale_reviews_and_deletion_authorization(clients):
     make_admin(admin)
     signup(owner, 'archived-owner@example.com')
     bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
     path = f'/api/admin/negocios/{bid}/estado'
     assert admin.patch(path, json={'estado': 'suspendido', 'motivo': 'Corregir información.'}).status_code == 200
     rid = owner.post(f'/api/negocios/{bid}/solicitudes', json={'mensaje': 'Solicito revisar la información.'}).json()['id']
@@ -594,6 +617,7 @@ def test_voluntary_deletion_returns_personal_and_enforces_wait_everywhere(client
     uid = signup(owner, 'wait-owner@example.com').json()['id']
     make_admin(admin)
     bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
     before = now()
     assert owner.delete(f'/api/negocios/{bid}').status_code == 204
     account = owner.get('/api/auth/me').json()
@@ -624,6 +648,7 @@ def test_only_admin_can_lift_wait_without_changing_permission(clients, restricte
     owner, admin = clients
     uid = signup(owner, 'lift-owner@example.com').json()['id']
     bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
     assert owner.delete(f'/api/negocios/{bid}').status_code == 204
     make_admin(admin)
     path = f'/api/admin/usuarios/{uid}/levantar-espera'
@@ -730,6 +755,7 @@ def test_reports_permissions_privacy_review_and_notifications(clients):
     signup(reporter, 'reporter@example.com')
     signup(owner, 'reported-owner@example.com')
     bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
     pid = owner.post('/api/productos', json={'negocioId': bid, 'nombre': 'Producto anunciado', 'precio': 10, 'descripcion': 'Descripción del producto.'}).json()['id']
     body = {'tipo': 'producto', 'objetivo_id': pid, 'motivo': 'producto_distinto', 'explicacion': 'El producto entregado no coincide con la descripción publicada.'}
     assert owner.post('/api/reportes', json=body).status_code == 403
@@ -772,6 +798,7 @@ def test_business_reports_hidden_targets_and_deleted_product_snapshots(clients):
     signup(reporter, 'business-reporter@example.com')
     signup(owner, 'business-owner@example.com')
     bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
     body = {'tipo': 'negocio', 'objetivo_id': bid, 'motivo': 'informacion_enganosa', 'explicacion': 'La información de ubicación publicada necesita una revisión.'}
     assert reporter.post('/api/reportes', json=body).status_code == 201
     assert owner.post('/api/reportes', json=body).status_code == 403
@@ -787,6 +814,134 @@ def test_business_reports_hidden_targets_and_deleted_product_snapshots(clients):
         assert admin.patch(f'/api/admin/reportes/{rid}', json={'estado': 'resuelto', 'resultado': 'medidas', 'respuesta': 'El producto ya fue retirado del catálogo.'}).status_code == 200
         assert admin.patch(f'/api/admin/negocios/{bid}/estado', json={'estado': 'suspendido', 'motivo': 'Se revisa su información.'}).status_code == 200
         assert reporter.post('/api/reportes', json=body).status_code == 404
+
+
+def test_publication_registration_is_private_until_approved(clients):
+    owner, admin = clients
+    signup(owner, 'publication-owner@example.com')
+    make_admin(admin)
+    assert owner.post('/api/negocios', json={**BUSINESS, 'telefono': ''}).status_code == 422
+    business = owner.post('/api/negocios', json=BUSINESS).json()
+    bid = business['id']
+    assert business['estado'] == 'pendiente' and business['publicacion_aprobada'] is False
+    assert admin.get('/api/negocios').json() == []
+    product = owner.post('/api/productos', json={'negocioId': bid, 'nombre': 'Preparado', 'precio': 10, 'descripcion': 'Catálogo en preparación.'})
+    assert product.status_code == 201
+    assert admin.get('/api/productos').json() == []
+    assert owner.get('/api/admin/publicaciones').status_code == 403
+    application = admin.get('/api/admin/publicaciones').json()[0]
+    assert application['estado'] == 'pendiente'
+    assert 'Publicación de negocio pendiente' in admin.get('/api/notificaciones').text
+    assert admin.patch(f'/api/admin/negocios/{bid}/estado', json={'estado': 'activo', 'motivo': 'Intento de saltar la aprobación.'}).status_code == 409
+    response = admin.patch(f"/api/admin/publicaciones/{application['id']}", json={'decision': 'aprobar', 'version': application['version'], 'motivo': 'Datos y fachada revisados para publicar.'})
+    assert response.status_code == 200, response.text
+    assert admin.get('/api/negocios').json()[0]['estado'] == 'activo'
+    assert admin.get('/api/productos').json()[0]['id'] == product.json()['id']
+    assert owner.get('/api/mi-publicacion').json()['estado'] == 'aprobado'
+
+
+def test_sensitive_proposals_preserve_live_data_and_reject_stale_decisions(clients):
+    owner, admin = clients
+    signup(owner, 'sensitive-owner@example.com')
+    make_admin(admin)
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
+    assert owner.put(f'/api/negocios/{bid}', json={**BUSINESS, 'descripcion': 'Descripción actualizada.'}).status_code == 200
+    assert admin.get('/api/negocios').json()[0]['descripcion'] == 'Descripción actualizada.'
+    proposed = {**BUSINESS, 'nombre': 'Nuevo nombre propuesto', 'direccion': 'Otra dirección propuesta', 'descripcion': 'Descripción propuesta.'}
+    assert owner.put(f'/api/negocios/{bid}', json=proposed).status_code == 200
+    public = admin.get('/api/negocios').json()[0]
+    assert public['nombre'] == BUSINESS['nombre'] and public['direccion'] == BUSINESS['direccion']
+    application = owner.get('/api/mi-publicacion').json()
+    assert application['propuesta']['nombre'] == proposed['nombre']
+    assert admin.get('/api/mi-publicacion').json() is None
+    newer = {**proposed, 'nombre': 'Nombre corregido antes de aprobar'}
+    owner.put(f'/api/negocios/{bid}', json=newer)
+    path = f"/api/admin/publicaciones/{application['id']}"
+    body = {'decision': 'aprobar', 'version': application['version'], 'motivo': 'Revisión de datos.'}
+    assert admin.patch(path, json=body).status_code == 409
+    body['version'] = owner.get('/api/mi-publicacion').json()['version']
+    assert admin.patch(path, json=body).status_code == 200
+    assert admin.get('/api/negocios').json()[0]['nombre'] == newer['nombre']
+    assert admin.patch(path, json=body).status_code == 409
+
+
+def test_publication_corrections_resubmission_limit_and_duplicate_alerts(clients, monkeypatch):
+    from datetime import timedelta
+    import backend.publication as publication
+    owner, admin = clients
+    signup(owner, 'corrections-owner@example.com')
+    make_admin(admin)
+    admin_id = admin.get('/api/auth/me').json()['id']
+    assert admin.post('/api/admin/negocios', json={**BUSINESS, 'owner_id': admin_id}).status_code == 201
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    application = next(a for a in admin.get('/api/admin/publicaciones').json() if a['negocio_id'] == bid)
+    assert set(application['duplicados'][0]['coincidencias']) == {'nombre', 'dirección', 'teléfono'}
+    path = f"/api/admin/publicaciones/{application['id']}"
+    for attempt in range(1, 4):
+        current = owner.get('/api/mi-publicacion').json()
+        assert admin.patch(path, json={'decision': 'correcciones', 'version': current['version'], 'motivo': 'Corrige la dirección y los datos de contacto.'}).status_code == 200
+        assert owner.get('/api/mi-moderacion').json()['negocio']['estado'] == 'correcciones'
+        assert owner.put(f'/api/negocios/{bid}', json={**BUSINESS, 'direccion': f'Dirección corregida {attempt}'}).status_code == 200
+        response = owner.post(f'/api/negocios/{bid}/solicitar-publicacion')
+        assert response.status_code == (200 if attempt < 3 else 429)
+    original_now = publication.now
+    monkeypatch.setattr(publication, 'now', lambda: original_now() + timedelta(hours=25))
+    assert owner.post(f'/api/negocios/{bid}/solicitar-publicacion').status_code == 200
+    current = owner.get('/api/mi-publicacion').json()
+    assert current['envios'] == 1
+    assert admin.patch(path, json={'decision': 'rechazar', 'version': current['version'], 'motivo': 'La información no permite publicar este negocio.'}).status_code == 200
+    assert owner.get('/api/mi-moderacion').json()['negocio']['estado'] == 'rechazado'
+    assert all(b['id'] != bid for b in admin.get('/api/negocios').json())
+
+
+def test_initial_publication_cannot_bypass_review_via_archive_or_import(clients):
+    owner, admin = clients
+    signup(owner, 'import-review@example.com')
+    make_admin(admin)
+    response = owner.post('/api/importar', json={'negocios': [{**BUSINESS, 'id': 500}], 'productos': []})
+    assert response.status_code == 200
+    bid = owner.get('/api/mi-moderacion').json()['negocio']['id']
+    assert owner.get('/api/mi-moderacion').json()['negocio']['estado'] == 'pendiente'
+    status = f'/api/admin/negocios/{bid}/estado'
+    assert admin.patch(status, json={'estado': 'archivado', 'motivo': 'Se archiva sin publicar.'}).status_code == 200
+    assert admin.patch(status, json={'estado': 'activo', 'motivo': 'Intento de restaurar sin revisión.'}).status_code == 409
+    assert admin.patch(status, json={'estado': 'pendiente', 'motivo': 'Reabrir la revisión de publicación.'}).status_code == 200
+    application = owner.get('/api/mi-publicacion').json()
+    assert application['estado'] == 'pendiente'
+    assert admin.patch(f"/api/admin/publicaciones/{application['id']}", json={'decision': 'aprobar', 'version': application['version'], 'motivo': 'Revisión inicial completada.'}).status_code == 200
+
+
+def test_admin_edit_closes_old_sensitive_proposal(clients):
+    owner, admin = clients
+    uid = signup(owner, 'closed-proposal@example.com').json()['id']
+    make_admin(admin)
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
+    owner.put(f'/api/negocios/{bid}', json={**BUSINESS, 'nombre': 'Cambio pendiente'})
+    application = owner.get('/api/mi-publicacion').json()
+    assert admin.put(f'/api/admin/negocios/{bid}', json={**BUSINESS, 'owner_id': uid, 'nombre': 'Nombre fijado por administración'}).status_code == 200
+    assert owner.get('/api/mi-publicacion').json()['estado'] == 'cerrada'
+    assert owner.post(f'/api/negocios/{bid}/solicitar-publicacion').status_code == 409
+    assert admin.patch(f"/api/admin/publicaciones/{application['id']}", json={'decision': 'aprobar', 'version': application['version'], 'motivo': 'No debe aplicar la propuesta anterior.'}).status_code == 409
+    assert owner.get('/api/negocios').json()[0]['nombre'] == 'Nombre fijado por administración'
+
+
+def test_rejected_sensitive_changes_do_not_hide_or_change_approved_business(clients):
+    owner, admin = clients
+    signup(owner, 'rejected-changes@example.com')
+    make_admin(admin)
+    bid = owner.post('/api/negocios', json=BUSINESS).json()['id']
+    published_fixture(bid)
+    proposed = {**BUSINESS, 'nombre': 'Cambio que no será aprobado', 'imagen': 'https://example.com/otra-fachada.jpg'}
+    assert owner.put(f'/api/negocios/{bid}', json=proposed).status_code == 200
+    item = owner.get('/api/mi-publicacion').json()
+    assert admin.patch(f"/api/admin/publicaciones/{item['id']}", json={'decision': 'rechazar', 'version': item['version'], 'motivo': 'La fachada propuesta no coincide con el negocio.'}).status_code == 200
+    public = admin.get('/api/negocios').json()[0]
+    assert public['estado'] == 'activo'
+    assert public['nombre'] == BUSINESS['nombre'] and public['imagen'] == BUSINESS['imagen']
+    assert owner.get('/api/mi-publicacion').json()['propuesta']['nombre'] == proposed['nombre']
+    assert owner.post(f'/api/negocios/{bid}/solicitar-publicacion').status_code == 200
 
 
 def test_registration_wait_expires_at_exact_deadline():

@@ -12,7 +12,7 @@ export default function BusinessNotice() {
         ? "eliminado"
         : "restringido"
       : "activo");
-  if (state === "activo") return null;
+  if (['activo', 'pendiente', 'correcciones', 'rechazado'].includes(state)) return null;
   const event = moderation.historial.find(
     (e) => !moderation.negocio || e.negocio_id === moderation.negocio.id,
   );

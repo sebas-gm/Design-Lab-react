@@ -10,6 +10,7 @@ export default function LabProvider({ children }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [moderation, setModeration] = useState(null);
+  const [publication, setPublication] = useState(null);
   const [moderationError, setModerationError] = useState("");
   const [notificationCount, setNotificationCount] = useState(0);
   const generation = useRef(0);
@@ -21,6 +22,7 @@ export default function LabProvider({ children }) {
     setLoading(false);
     if (!value) {
       setModeration(null);
+      setPublication(null);
       setModerationError("");
       setNotificationCount(0);
       setNegocios([]);
@@ -34,15 +36,17 @@ export default function LabProvider({ children }) {
     const request = ++generation.current;
     setLoading(true);
     try {
-      const [businesses, products, account] = await Promise.all([
+      const [businesses, products, account, application] = await Promise.all([
         api("/negocios"),
         api("/productos"),
         api("/auth/me"),
+        api("/mi-publicacion"),
       ]);
       if (request !== generation.current) return;
       setNegocios(businesses);
       setProductos(products);
       setUser(account);
+      setPublication(application);
       setError("");
       window.dispatchEvent(new Event("navishop:moderation-changed"));
     } catch (e) {
@@ -85,11 +89,13 @@ export default function LabProvider({ children }) {
         api("/mi-moderacion"),
         api("/notificaciones"),
         api("/auth/me"),
+        api("/mi-publicacion"),
       ])
-        .then(([state, notices, account]) => {
+        .then(([state, notices, account, application]) => {
           if (!active || token !== generation.current) return;
           setModerationError("");
           setModeration(state);
+          setPublication(application);
           setNotificationCount(notices.no_leidas);
           setUser(account);
           setNegocios((previous) => {
@@ -134,6 +140,7 @@ export default function LabProvider({ children }) {
         error,
         loading,
         moderation,
+        publication,
         moderationError,
         notificationCount,
       }}

@@ -36,8 +36,8 @@ export default function ActivarNegocio() {
           </li>
         </ol>
         <p>
-          La activación es gratuita, sin aprobación manual. Si cancelas antes de
-          guardar, tu cuenta seguirá siendo personal.
+          La activación es gratuita. La administración revisará tu negocio antes
+          de publicarlo. Si cancelas antes de guardar, tu cuenta seguirá siendo personal.
         </p>
         <Link className="purple-link" to="/registrar-negocio">
           Completar datos de mi negocio 

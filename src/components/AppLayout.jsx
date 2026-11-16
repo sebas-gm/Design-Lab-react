@@ -3,6 +3,7 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import CatalogStatus from "./CatalogStatus";
 import BusinessNotice from "./BusinessNotice";
+import PublicationNotice from "./PublicationNotice";
 import { useLab } from "../context";
 import { isClientView } from "../navigation";
 import "../styles/welcome.css";
@@ -32,6 +33,7 @@ export default function AppLayout() {
       >
         <CatalogStatus />
         {workspace && <BusinessNotice />}
+        {workspace && <PublicationNotice />}
         <Outlet />
         <Footer />
       </div>

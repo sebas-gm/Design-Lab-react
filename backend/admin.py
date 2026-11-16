@@ -107,7 +107,7 @@ def assign_owner(db, owner_id, business_id=None):
 @router.post('/negocios', status_code=201)
 def create_business(data: AdminBusinessIn, user=Depends(admin_user), db=Depends(get_db)):
     assign_owner(db, data.owner_id)
-    item = Business(**data.model_dump())
+    item = Business(**data.model_dump(), publicacion_aprobada=True)
     db.add(item)
     db.flush()
     audit(db, user, 'crear', 'negocio', item.id, {'nombre': item.nombre, 'owner_id': item.owner_id})
@@ -122,6 +122,8 @@ def edit_business(item_id: int, data: AdminBusinessIn, user=Depends(admin_user),
     assign_owner(db, data.owner_id, item_id)
     for key, value in data.model_dump().items():
         setattr(item, key, value)
+    from backend.publication import close_application
+    close_application(db, item, 'La administración editó los datos o la propiedad del negocio. Revisa la ficha actual antes de volver a solicitar publicación.')
     if old_owner != item.owner_id:
         previous_event = db.scalar(select(ModerationEvent).where(ModerationEvent.negocio_id == item.id).order_by(ModerationEvent.id.desc()).limit(1))
         record_decision(db, item, item.estado, previous_event.motivo if previous_event else 'El negocio fue asignado a tu cuenta por la administración.')
@@ -134,8 +136,18 @@ def edit_business(item_id: int, data: AdminBusinessIn, user=Depends(admin_user),
 @router.patch('/negocios/{item_id}/estado')
 def status(item_id: int, data: BusinessStatus, user=Depends(admin_user), db=Depends(get_db)):
     item = get_item(db, Business, item_id)
+    if not item.publicacion_aprobada and data.estado == 'activo':
+        raise HTTPException(409, 'Aprueba primero la solicitud desde Publicaciones')
+    if data.estado == 'pendiente' and item.publicacion_aprobada:
+        raise HTTPException(409, 'El negocio ya tiene publicación aprobada. Usa suspensión o archivo para moderarlo.')
     previous = item.estado
     item.estado = data.estado
+    from backend.publication import close_application
+    close_application(db, item, f'La administración cambió el estado a {data.estado}. Consulta Estado y solicitudes.')
+    if data.estado == 'pendiente':
+        from backend.publication import queue
+        from backend.schemas import BusinessIn
+        queue(db, item, BusinessIn.model_validate({key: getattr(item, key) for key in BusinessIn.model_fields}))
     record_decision(db, item, data.estado, data.motivo, data.nota_interna)
     audit(db, user, 'cambiar_estado', 'negocio', item.id, {'anterior': previous, 'nuevo': data.estado, 'motivo': data.motivo, 'nota_interna': data.nota_interna})
     finish(db)
@@ -277,6 +289,8 @@ def resolve_request(item_id: int, data: ReviewDecision, user=Depends(admin_user)
             owner.puede_registrar = True
             notify(db, owner.id, 'Puedes registrar un nuevo negocio', data.respuesta)
         else:
+            if not business.publicacion_aprobada:
+                raise HTTPException(409, 'Este negocio necesita aprobación inicial desde Publicaciones. Reabre su revisión antes de publicarlo.')
             business.estado = 'activo'
             record_decision(db, business, 'activo', data.respuesta)
     else:

@@ -15,6 +15,8 @@ BUSINESS_COLUMNS = {
 def migrate_business_details(engine):
     existing = {column['name'] for column in inspect(engine).get_columns('businesses')}
     with engine.begin() as connection:
+        if 'publicacion_aprobada' not in existing:
+            connection.execute(text('ALTER TABLE businesses ADD COLUMN publicacion_aprobada BOOLEAN NOT NULL DEFAULT 1'))
         for name, sql_type in BUSINESS_COLUMNS.items():
             if name not in existing:
                 connection.execute(text(f"ALTER TABLE businesses ADD COLUMN {name} {sql_type} NOT NULL DEFAULT ''"))

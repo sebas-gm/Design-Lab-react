@@ -43,6 +43,7 @@ class Business(Base):
     dias_atencion = Column(String(60), nullable=False, default='', server_default='')
     logo = Column(String(2048), nullable=False, default='', server_default='')
     estado = Column(String(16), nullable=False, default='activo', server_default='activo')
+    publicacion_aprobada = Column(Boolean, nullable=False, default=False, server_default='0')
     __table_args__ = (UniqueConstraint('owner_id', 'legacy_id'), UniqueConstraint('owner_id', name='uq_business_owner'))
 
 
@@ -130,3 +131,18 @@ class Report(Base):
     respuesta = Column(Text, nullable=False, default='')
     fecha = Column(DateTime, nullable=False)
     resuelta = Column(DateTime, nullable=True)
+
+
+class BusinessApplication(Base):
+    __tablename__ = 'business_applications'
+    id = Column(Integer, primary_key=True)
+    negocio_id = Column(Integer, nullable=False, unique=True)
+    owner_id = Column(ForeignKey('users.id'), nullable=False, index=True)
+    propuesta = Column(Text, nullable=False)
+    estado = Column(String(16), nullable=False, default='pendiente')
+    motivo = Column(Text, nullable=False, default='')
+    version = Column(Integer, nullable=False, default=1)
+    envios = Column(Integer, nullable=False, default=1)
+    ventana_desde = Column(DateTime, nullable=False)
+    fecha = Column(DateTime, nullable=False)
+    actualizada = Column(DateTime, nullable=False)
