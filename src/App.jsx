@@ -1,4 +1,5 @@
 import AppLayout from "./components/AppLayout";
+import ScrollToTop from './components/ScrollToTop';
 import AdminPanel from "./pages/AdminPanel";
 import BusinessStatus from "./pages/BusinessStatus";
 import Notifications from "./pages/Notifications";
@@ -33,6 +34,7 @@ function App() {
     <LabProvider>
       <ConfirmationProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route element={<AppLayout />}>
               <Route path="/" element={<Welcome />} />

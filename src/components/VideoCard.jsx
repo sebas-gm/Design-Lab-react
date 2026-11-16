@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import PublicVideoCard from './PublicVideoCard';
 
 export default function VideoCard({ video, nombreNegocio, children, playing = false, onPlay, variant, categoria }) {
-  if (variant === 'public') return <PublicVideoCard video={video} nombreNegocio={nombreNegocio} categoria={categoria} onPlay={onPlay}/>;
+  if (variant === 'public') return <PublicVideoCard video={video} nombreNegocio={nombreNegocio} categoria={categoria} onPlay={onPlay}>{children}</PublicVideoCard>;
   return (
     <article className="video-card">
       <div

@@ -1,0 +1,25 @@
+.owner-video-art { display: block; width: 170px; height: auto; flex-shrink: 0; }
+.owner-videos-page .owner-products-hero > .owner-video-art { align-self: flex-end; margin-block: -20px; }
+.owner-videos-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.owner-videos-grid .public-video-card { padding: 9px; }
+.owner-videos-grid .public-video-preview { border-radius: 11px; aspect-ratio: 16 / 10; }
+.owner-videos-grid .public-video-body { padding: 12px 3px 3px; }
+.owner-videos-grid .public-video-body h3 { font-size: 15px; }
+.owner-videos-grid .public-video-business { margin-top: auto; }
+.owner-video-card-actions { margin-top: 12px; }
+.owner-video-card-actions > a { display: inline-block; color: #9777ab; font-size: 10px; text-decoration: none; margin-bottom: 13px; }
+.owner-video-card-actions > a:hover { text-decoration: underline; }
+.owner-video-card-actions > div { display: flex; align-items: stretch; gap: 8px; }
+.owner-video-card-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 1; min-height: 38px; min-width: 0; padding: 8px; border: 1px solid #8032bf; border-radius: 10px; background: linear-gradient(110deg, #9340d4, #792bbe); color: white; font-size: 11px; font-weight: 600; }
+.owner-video-card-actions .owner-video-remove { flex: 1.6; color: #8c54b1; background: #f6edfd; border-color: #e5d1f4; }
+.owner-video-card-actions svg { width: 14px; height: 14px; flex-shrink: 0; }
+.owner-video-card-actions button:disabled { opacity: .6; cursor: not-allowed; }
+.owner-videos-page .owner-products-state > .owner-video-art { width: 160px; margin-block: -10px; }
+.owner-videos-explore { display: inline-block; margin-top: 22px; color: #8e65ab; font-size: 12px; text-decoration: none; }
+.owner-video-form-fields { display: flex; flex-direction: column; gap: 16px; border: 0; padding: 0; min-width: 0; }
+.owner-video-form-fields input, .owner-video-form-fields select { padding: 12px; border: 1px solid #dec9ed; border-radius: 10px; color: #604376; }
+.owner-video-form-fields small { font-size: 12px; line-height: 1.6; color: #92769f; }
+@media (max-width: 1400px) { .owner-videos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .owner-videos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 800px) { .owner-videos-page .owner-products-hero > .owner-video-art { width: 120px; } }
+@media (max-width: 550px) { .owner-videos-grid { grid-template-columns: 1fr; } .owner-videos-page .owner-products-hero > .owner-video-art { width: 75px; margin-right: -12px; } .owner-video-card-actions button { font-size: 12px; } }
